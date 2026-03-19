@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="CapShop.Admin/CapShop.Admin.csproj" />
+  <Project Path="CapShop.Auth/CapShop.Auth.csproj" />
+  <Project Path="CapShop.Catalog/CapShop.Catalog.csproj" />
+  <Project Path="CapShop.Gateway/CapShop.Gateway.csproj" />
+  <Project Path="CapShop.Orders/CapShop.Orders.csproj" />
+  <Project Path="CapShop.Shared/CapShop.Shared.csproj" />
+</Solution>

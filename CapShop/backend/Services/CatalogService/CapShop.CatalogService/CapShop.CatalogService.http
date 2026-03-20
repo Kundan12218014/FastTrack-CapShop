@@ -1,0 +1,6 @@
+@CapShop.CatalogService_HostAddress = http://localhost:5053
+
+GET {{CapShop.CatalogService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

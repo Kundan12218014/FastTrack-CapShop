@@ -11,4 +11,8 @@
     <PackageReference Include="Ocelot" Version="24.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\CapShop.Shared\CapShop.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

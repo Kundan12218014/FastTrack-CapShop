@@ -1,3 +1,5 @@
+using CapShop.Shared.Middleware;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -11,7 +13,13 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+// 1. Global exception middleware must be FIRST
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
+// 2. Correlation middleware comes after it
+app.UseMiddleware<CorrelationIdMiddleware>();
+
+// 3. Other middleware
 app.UseHttpsRedirection();
 
 var summaries = new[]

@@ -1,8 +1,13 @@
+using CapShop.AuthService.Domain.Interfaces;
+using CapShop.AuthService.Infrastructure.Persistence.Repositories;
+using CapShop.Shared.Middleware;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 var app = builder.Build();
 
@@ -11,7 +16,12 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+// 1. Global exception middleware must be FIRST
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
+// 2. Correlation middleware comes after it
+app.UseMiddleware<CorrelationIdMiddleware>();
+// 3. Other Middleware comes after 
 app.UseHttpsRedirection();
 
 var summaries = new[]

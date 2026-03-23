@@ -24,12 +24,4 @@
     <ProjectReference Include="..\..\..\Shared\CapShop.Shared\CapShop.Shared.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Application\Commands\" />
-    <Folder Include="Application\Queries\" />
-    <Folder Include="Controllers\" />
-    <Folder Include="Application\DTOs\" />
-    <Folder Include="Application\Validators\" />
-  </ItemGroup>
-
 </Project>

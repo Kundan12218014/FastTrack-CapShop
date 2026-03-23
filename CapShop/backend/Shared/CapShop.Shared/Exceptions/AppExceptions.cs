@@ -24,9 +24,9 @@ namespace CapShop.Shared.Exceptions
 
     }
     //409 Conflict
-    public class ConfilictException : Exception
+    public class ConflictException : Exception
     {
-        public ConfilictException(string message) : base(message) { }
+        public ConflictException(string message) : base(message) { }
     }
     //422 Unprocessable Entity — business rule / input validation failure.
 

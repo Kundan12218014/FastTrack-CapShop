@@ -1,0 +1,143 @@
+{
+    "Routes": [
+        {
+            "UpstreamPathTemplate": "/gateway/auth/{everything}",
+            "UpstreamHttpMethod": [ "GET", "POST", "PUT", "PATCH", "DELETE" ],
+            "DownstreamPathTemplate": "/auth/{everything}",
+            "DownstreamScheme": "https",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "localhost",
+                    "Port": 5001
+                }
+            ],
+            "RouteId": "auth-all"
+        },
+        {
+            "UpstreamPathTemplate": "/gateway/catalog/{everything}",
+            "UpstreamHttpMethod": [ "GET" ],
+            "DownstreamPathTemplate": "/catalog/{everything}",
+            "DownstreamScheme": "https",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "localhost",
+                    "Port": 5002
+                }
+            ],
+            "RouteId": "catalog-read-public"
+        },
+        {
+            "UpstreamPathTemplate": "/gateway/orders/{everything}",
+            "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+            "DownstreamPathTemplate": "/orders/{everything}",
+            "DownstreamScheme": "https",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "localhost",
+                    "Port": 5003
+                }
+            ],
+            "AuthenticationOptions": {
+                "AuthenticationProviderKey": "Bearer",
+                "AllowedScopes": []
+            },
+            "RouteId": "Orders-all-proctected"
+        },
+        {
+            "UpstreamPathTemplate": "/gateway/admin/{everything}",
+            "UpstreamHttpMethod": [ "GET", "POST", "PUT", "PATCH", "DELETE" ],
+            "DownstreamPathTemplate": "/admin/{everything}",
+            "DownstreamScheme": "https",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "localhost",
+                    "Port": 5004
+                }
+            ],
+            "AuthenticationOptions": {
+                "AuthenticationProviderKey": "Bearer",
+                "AllowedScopes": []
+            },
+            "RouteId": "admin-all-protected"
+        }
+    ],
+    "GlobalConfiguration": {
+        "BaseUrl": "https://localhost:5000",
+        "RequestIdKey": "X-Correlation-Id"
+    }
+
+}
+
+//{
+//    "Routes": [
+
+//        {
+//            "UpstreamPathTemplate": "/gateway/auth/{everything}",
+//            "UpstreamHttpMethod": [ "GET", "POST", "PUT", "PATCH", "DELETE" ],
+//            "DownstreamPathTemplate": "/auth/{everything}",
+//            "DownstreamScheme": "http",
+//            "DownstreamHostAndPorts": [
+//                {
+//                    "Host": "localhost",
+//                    "Port": 5101
+//                }
+//            ],
+//            "RouteId": "auth-all"
+//        },
+
+//        {
+//            "UpstreamPathTemplate": "/gateway/catalog/{everything}",
+//            "UpstreamHttpMethod": [ "GET" ],
+//            "DownstreamPathTemplate": "/catalog/{everything}",
+//            "DownstreamScheme": "http",
+//            "DownstreamHostAndPorts": [
+//                {
+//                    "Host": "localhost",
+//                    "Port": 5102
+//                }
+//            ],
+//            "RouteId": "catalog-read-public"
+//        },
+
+//        {
+//            "UpstreamPathTemplate": "/gateway/orders/{everything}",
+//            "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+//            "DownstreamPathTemplate": "/orders/{everything}",
+//            "DownstreamScheme": "http",
+//            "DownstreamHostAndPorts": [
+//                {
+//                    "Host": "localhost",
+//                    "Port": 5103
+//                }
+//            ],
+//            "AuthenticationOptions": {
+//                "AuthenticationProviderKey": "Bearer",
+//                "AllowedScopes": []
+//            },
+//            "RouteId": "orders-all-protected"
+//        },
+
+//        {
+//            "UpstreamPathTemplate": "/gateway/admin/{everything}",
+//            "UpstreamHttpMethod": [ "GET", "POST", "PUT", "PATCH", "DELETE" ],
+//            "DownstreamPathTemplate": "/admin/{everything}",
+//            "DownstreamScheme": "http",
+//            "DownstreamHostAndPorts": [
+//                {
+//                    "Host": "localhost",
+//                    "Port": 5104
+//                }
+//            ],
+//            "AuthenticationOptions": {
+//                "AuthenticationProviderKey": "Bearer",
+//                "AllowedScopes": []
+//            },
+//            "RouteId": "admin-all-protected"
+//        }
+
+//    ],
+//    "GlobalConfiguration": {
+//        "BaseUrl": "https://localhost:5000",
+//        "RequestIdKey": "X-Correlation-Id"
+//    }
+//}

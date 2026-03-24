@@ -7,7 +7,7 @@ namespace CapShop.AuthService.Infrastructure.Persistence.Repositories;
 public class UserRepository: IUserRepository
 {
     private readonly AuthDbContext _context;
-    public UserRepository(AuthDbContext _context)=>_context=_context;
+    public UserRepository(AuthDbContext context)=>_context=context;
     public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
         await _context.Users
                 .AsNoTracking()

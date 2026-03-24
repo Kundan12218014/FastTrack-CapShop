@@ -17,7 +17,7 @@ namespace CapShop.AuthService.Infrastructure.Security
         }
         public bool Verify(string plainTextPassword, string hash)
         {
-            if (string.IsNullOrWhiteSpace(plainTextPassword)||string.IsNullOrWhiteSpace(hash) {
+            if (string.IsNullOrWhiteSpace(plainTextPassword)||string.IsNullOrWhiteSpace(hash)){
                 return false;
             }
             return BCrypt.Net.BCrypt.Verify(plainTextPassword,hash);

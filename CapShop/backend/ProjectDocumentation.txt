@@ -1,0 +1,66 @@
+CapShop Microservices Project Documentation
+=======================================
+
+Overview
+--------
+CapShop is an e-commerce platform built using a microservices architecture in .NET 10. The system leverages CQRS (Command Query Responsibility Segregation) patterns, secure authentication (JWT & BCrypt), and API Gateway (Ocelot) to route requests to respective services.
+
+Solution Structure
+------------------
+The solution comprises several microservices, an API Gateway, and a Shared library, along with their respective test projects.
+
+1. API Gateway (CapShop.Gateway)
+   - Uses Ocelot to route incoming HTTP requests to corresponding backend microservices.
+   - Configured routing for Auth, Catalog, Orders, and Admin services.
+   
+2. Auth Service (CapShop.AuthService)
+   - Handles user registration, authentication, and profile retrieval.
+   - Domain Entities: `User` (includes secure password hash, status, roles via `UserRoles`).
+   - Infrastructure: Uses Entity Framework Core with SQL Server for data persistence. `BcryptPasswordHasher` is used for password hashing, and `JwtTokenGenerator` for creating JSON Web Tokens.
+   - CQRS Handlers:
+     - `RegisterUserCommandHandler`: Validates uniqueness of user email, hashes password, and persists new user.
+     - `LoginCommandHandler`: Verifies user credentials including active status, and issues a JWT.
+     - `GetUserQueryHandler`: Fetches basic user profile info.
+   - Controllers: `AuthController` exposes endpoints `/auth/signup`, `/auth/login`, `/auth/users/{id}`, and `/auth/users/{id}/activate`.
+
+3. Catalog Service (CapShop.CatalogService)
+   - Responsible for managing products over catalog.
+
+4. Order Service (CapShop.OrderService)
+   - Manages user orders processing.
+
+5. Admin Service (CapShop.AdminService)
+   - Handles administrative tasks across the platform.
+
+6. Shared Library (CapShop.Shared)
+   - Contains cross-cutting concerns and shared models used by multiple services.
+   - Exceptions: `AppExceptions` (Conflict, NotFound, Unauthorized, Forbidden).
+   - Middleware: `GlobalExceptionMiddleware` for centralized error handling, and `CorrelationIdMiddleware` for distributed tracing.
+   - Models: `ApiResponse`, `ValidationErrors`, `PageResult`.
+
+7. Unit Tests
+   - Implemented using NUnit and Moq.
+   - `CapShop.AuthService.Tests` contains extensive suites for handlers:
+     - `RegisterUserCommandHandlerTests`
+     - `LoginCommandHandlerTests`
+     - `GetUserQueryHandlerTests`
+   - Test suites cover valid workflows as well as edge cases (e.g., user not found, inactive user, duplicate email).
+
+Design Patterns & Practices
+---------------------------
+- Microservices Architecture
+- CQRS Data pattern mapping (Commands for state mutation, Queries for reading data)
+- Repository Pattern (`IUserRepository`)
+- Standardized API Responses wrapper (`ApiResponse<T>`)
+- Centralized Global Exception Handling
+- API Gateway routing
+- Dependency Injection
+- Async / Await programming model
+- JWT Bearer Authentication
+- Minimal APIs & MediatR structure (Command/Handler based approach without explicit MediatR dependencies)
+
+Latest Completed Features
+-------------------------
+- Wrote and debugged full unit testing suite for the AuthService Command/Query handlers (Registration, Login, User Retrieval).
+- Refactored `UserRoles` entity references to utilize standard public constant declarations correctly across standard testings logic.
+- Configured logging/diagnostics, standardized models for responses.

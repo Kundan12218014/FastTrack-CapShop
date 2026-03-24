@@ -23,6 +23,10 @@ namespace CapShop.AuthService.Infrastructure.Persistence
 
                 entity.Property(u => u.Email)
                 .IsRequired()
+                .HasMaxLength(200);
+
+                entity.Property(u => u.PhoneNumber)
+                .IsRequired()
                 .HasMaxLength(15);
 
                 entity.Property(u => u.PasswordHash)
@@ -33,9 +37,13 @@ namespace CapShop.AuthService.Infrastructure.Persistence
                 .IsRequired()
                 .HasMaxLength(20)
                 .HasDefaultValue(UserRoles.Customer);
+
                 entity.Property(u => u.IsActive)
                 .HasDefaultValue(true);
+
                 entity.Property(u => u.CreatedAt)
+                .IsRequired();
+                entity.Property(u => u.UpdatedAt)
                 .IsRequired();
 
                 //Unique index on email = db-level backup to the appliaiton level check in RegisterUserCommandHandler

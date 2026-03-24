@@ -58,7 +58,7 @@ public class AuthController : ControllerBase
 
     }
     //get /auth/{id:guid}
-    [HttpGet("users/{id:guid")]
+    [HttpGet("users/{id:guid}")]
     [Authorize]
     [ProducesResponseType(typeof(ApiResponse<UserDto>),StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>),StatusCodes.Status401Unauthorized)]

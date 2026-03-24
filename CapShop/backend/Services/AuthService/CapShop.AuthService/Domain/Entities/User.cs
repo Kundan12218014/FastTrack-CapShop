@@ -15,14 +15,14 @@
 
 
         private User() { }
-        public static User Create(string fullName,string email,string phoneNumber,string passwordHash,string role = UserRoles.Customer)
+        public static User Create(string fullName, string email, string phoneNumber, string passwordHash, string role = UserRoles.Customer)
         {
             if (string.IsNullOrWhiteSpace(fullName))
                 throw new ArgumentException("Full name is required", nameof(fullName));
             if (string.IsNullOrWhiteSpace(email))
                 throw new ArgumentException("Email is required.", nameof(email));
             if (string.IsNullOrWhiteSpace(passwordHash))
-                throw new ArgumentException("Password hash is required.", nameof(passwordHash);
+                throw new ArgumentException("Password hash is required.", nameof(passwordHash));
             return new User
             {
                 Id = Guid.NewGuid(),
@@ -46,12 +46,14 @@
             IsActive = false;
             UpdatedAt = DateTime.UtcNow;
         }
-        public void UpdateProfile(string fullName,string phoneNumber)
+        public void UpdateProfile(string fullName, string phoneNumber)
         {
-            if (!string.IsNullOrWhiteSpace(fullName)){
+            if (!string.IsNullOrWhiteSpace(fullName))
+            {
                 FullName = FullName.Trim();
             }
-            if (!string.IsNullOrWhiteSpace(phoneNumber)){
+            if (!string.IsNullOrWhiteSpace(phoneNumber))
+            {
                 PhoneNumber = phoneNumber.Trim();
             }
             UpdatedAt = DateTime.UtcNow;
@@ -59,9 +61,10 @@
         }
     }
 
-    internal class UserRoles
+    public static class UserRoles
     {
         public const string Customer = "Customer";
         public const string Admin = "Admin";
+
     }
 }

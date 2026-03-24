@@ -42,7 +42,7 @@ namespace CapShop.Shared.Middleware
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,"Unhandled exception on {Method} {Path} | TraceId : {TraceId)",
+                _logger.LogError(ex,"Unhandled exception on {Method} {Path} | TraceId : {TraceId}",
                     context.Request.Method,
                     context.Request.Path,
                     context.TraceIdentifier);
@@ -61,7 +61,7 @@ namespace CapShop.Shared.Middleware
             var (statusCode, response) = exception switch
             {
                 NotFoundException ex => (HttpStatusCode.NotFound, ApiResponse<Object>.Fail(ex.Message)),
-                ConfilictException ex => (HttpStatusCode.Conflict, ApiResponse<object>.Fail(ex.Message)),
+                ConflictException ex => (HttpStatusCode.Conflict, ApiResponse<object>.Fail(ex.Message)),
                 AppValidationExceptions ex => (HttpStatusCode.UnprocessableEntity, ApiResponse<object>.Fail(ex.Message, ex.Errors)),
                 DomainException ex => (HttpStatusCode.BadRequest,
                  ApiResponse<object>.Fail(ex.Message)),

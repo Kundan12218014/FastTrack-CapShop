@@ -4,7 +4,7 @@ using System.Text;
 
 namespace CapShop.Shared.Models
 {
-    public class PageResult<T>
+    public class PagedResult<T>
     {
         public IEnumerable<T> Items { get; set; } = [];
         public int TotalCount { get; set; }
@@ -16,8 +16,8 @@ namespace CapShop.Shared.Models
         public bool HasNextPage => PageSize < TotalPages;
         public bool HasPreviousPage => Page > 1;
 
-        public PageResult() { }
-        public PageResult(IEnumerable<T>items,int totalCount,int page,int pageSize)
+        public PagedResult() { }
+        public PagedResult(IEnumerable<T>items,int totalCount,int page,int pageSize)
         {
             Items = items;
             TotalCount = totalCount;

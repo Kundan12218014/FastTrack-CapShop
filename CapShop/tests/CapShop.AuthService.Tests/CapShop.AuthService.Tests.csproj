@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\backend\Services\AuthService\CapShop.AuthService\CapShop.AuthService.csproj" />
+    <ProjectReference Include="..\..\backend\Services\CatalogService\CapShop.CatalogService\CapShop.CatalogService.csproj" />
   </ItemGroup>
 
 </Project>

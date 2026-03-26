@@ -87,12 +87,12 @@ public partial class Program
 
           });
         builder.Services.AddAuthorization();
-        //builder.Services.AddAuthorization(options =>
-        //{
-        //    options.FallbackPolicy = new AuthorizationPolicyBuilder()
-        //        .RequireAuthenticatedUser()
-        //        .Build();
-        //});
+        builder.Services.AddAuthorization(options =>
+        {
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
+        });
 
         //swagger
         // ============================================================
@@ -121,14 +121,14 @@ public partial class Program
                 BearerFormat = "JWT"
             });
 
-            //// Apply JWT to all endpoints
-            //options.AddSecurityRequirement(new OpenApiSecurityRequirement
-            //{
-            //    {
-            //        new OpenApiSecuritySchemeReference("Bearer"),
-            //        new List<string>()
-            //    }
-            //});
+            // Apply JWT to all endpoints
+            options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecuritySchemeReference("Bearer"),
+                    new List<string>()
+                }
+            });
         });
         //cors
         builder.Services.AddCors(options => options.AddPolicy("GatewayOnly", policy =>

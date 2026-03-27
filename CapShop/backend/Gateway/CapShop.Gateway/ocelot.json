@@ -37,10 +37,6 @@
                     "Port": 5003
                 }
             ],
-            "AuthenticationOptions": {
-                "AuthenticationProviderKey": "Bearer",
-                "AllowedScopes": []
-            },
             "RouteId": "Orders-all-proctected"
         },
         {
@@ -54,10 +50,6 @@
                     "Port": 5004
                 }
             ],
-            "AuthenticationOptions": {
-                "AuthenticationProviderKey": "Bearer",
-                "AllowedScopes": []
-            },
             "RouteId": "admin-all-protected"
         }
     ],

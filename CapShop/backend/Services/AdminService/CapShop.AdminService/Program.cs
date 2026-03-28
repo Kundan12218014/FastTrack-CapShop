@@ -1,4 +1,5 @@
 using System.Text;
+using System.Security.Claims;
 using CapShop.AdminService.Application.Services;
 using CapShop.AdminService.Domain.Interfaces;
 using CapShop.AdminService.Infrastructure.Persistence;
@@ -60,13 +61,85 @@ builder.Services
             ValidAudience = jwtSettings["Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
                                            Encoding.UTF8.GetBytes(secretKey)),
-            ClockSkew = TimeSpan.FromSeconds(30)
+            ClockSkew = TimeSpan.FromSeconds(30),
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = ClaimTypes.NameIdentifier
         };
 
         options.Events = new JwtBearerEvents
         {
+            // TEMP DEBUG START: Remove after authentication troubleshooting.
+            OnMessageReceived = context =>
+            {
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("Admin.JwtDebug");
+
+                var authHeader = context.Request.Headers.Authorization.ToString();
+                var hasAuthHeader = !string.IsNullOrWhiteSpace(authHeader);
+                var hasBearerPrefix = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
+
+                logger.LogInformation(
+                    "JWT incoming request. Path: {Path}. Authorization header present: {HasAuthHeader}. Bearer scheme used: {HasBearerPrefix}.",
+                    context.Request.Path,
+                    hasAuthHeader,
+                    hasBearerPrefix);
+
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = context =>
+            {
+                var logger = context.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("Admin.JwtDebug");
+
+                logger.LogWarning(
+                    context.Exception,
+                    "JWT validation failed for path {Path}. Reason: {Message}",
+                    context.Request.Path,
+                    context.Exception.Message);
+
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                if (context.Principal?.Identity is ClaimsIdentity identity)
+                {
+                    var hasStandardRole = identity.HasClaim(c => c.Type == ClaimTypes.Role);
+                    if (!hasStandardRole)
+                    {
+                        var customRole = identity.FindFirst("role")?.Value;
+                        if (!string.IsNullOrWhiteSpace(customRole))
+                        {
+                            identity.AddClaim(new Claim(ClaimTypes.Role, customRole));
+                        }
+                    }
+
+                    var hasNameId = identity.HasClaim(c => c.Type == ClaimTypes.NameIdentifier);
+                    if (!hasNameId)
+                    {
+                        var customUserId = identity.FindFirst("userId")?.Value;
+                        if (!string.IsNullOrWhiteSpace(customUserId))
+                        {
+                            identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, customUserId));
+                        }
+                    }
+                }
+
+                return Task.CompletedTask;
+            },
             OnChallenge = async ctx =>
             {
+                var logger = ctx.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("Admin.JwtDebug");
+
+                logger.LogWarning(
+                    "JWT challenge triggered. Path: {Path}. Error: {Error}. Description: {ErrorDescription}",
+                    ctx.Request.Path,
+                    ctx.Error,
+                    ctx.ErrorDescription);
+
                 ctx.HandleResponse();
                 ctx.Response.StatusCode = 401;
                 ctx.Response.ContentType = "application/json";
@@ -75,11 +148,20 @@ builder.Services
             },
             OnForbidden = async ctx =>
             {
+                var logger = ctx.HttpContext.RequestServices
+                    .GetRequiredService<ILoggerFactory>()
+                    .CreateLogger("Admin.JwtDebug");
+
+                logger.LogWarning(
+                    "JWT forbidden triggered. Path: {Path}. Authenticated user lacks Admin role.",
+                    ctx.Request.Path);
+
                 ctx.Response.StatusCode = 403;
                 ctx.Response.ContentType = "application/json";
                 await ctx.Response.WriteAsync(
                     """{"success":false,"message":"Admin access required."}""");
             }
+            // TEMP DEBUG END
         };
     });
 
@@ -129,6 +211,11 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader()
               .AllowAnyMethod()));
 
+// ══════════════════════════════════════════════════════════════════════════
+// 7. HEALTH CHECKS
+// ══════════════════════════════════════════════════════════════════════════
+builder.Services.AddHealthChecks();
+
 builder.Services.AddControllers();
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -156,6 +243,28 @@ app.UseCors("GatewayOnly");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// ══════════════════════════════════════════════════════════════════════════
+// HEALTH CHECK ENDPOINT (public, no auth required)
+// ══════════════════════════════════════════════════════════════════════════
+app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var response = new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description
+            })
+        };
+        await context.Response.WriteAsJsonAsync(response);
+    }
+}).AllowAnonymous();
 
 if (app.Environment.IsDevelopment())
 {

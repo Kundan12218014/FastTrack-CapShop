@@ -121,7 +121,7 @@ public partial class Program
                 BearerFormat = "JWT"
             });
 
-            // Apply JWT to all endpoints
+            //Apply JWT to all endpoints
             options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
             {
                 {
@@ -159,8 +159,8 @@ public partial class Program
 
         app.UseHttpsRedirection();
         app.UseCors("GatewayOnly");
-        app.UseAuthentication(); // Must come before UseAuthorization
-        app.UseAuthorization();
+        app.UseAuthentication(); // 1. Identify the user
+        app.UseAuthorization();  // 2. Check if they have permission
         app.MapControllers();
 
         // ══════════════════════════════════════════════════════════════════════════

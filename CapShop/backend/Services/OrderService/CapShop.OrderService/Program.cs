@@ -14,7 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
-
+    
 // ══════════════════════════════════════════════════════════════════════════
 // 1. DATABASE
 // ══════════════════════════════════════════════════════════════════════════
@@ -42,6 +42,8 @@ builder.Services.AddScoped<CancelOrderCommandHandler>();
 builder.Services.AddScoped<GetCartQueryHandler>();
 builder.Services.AddScoped<GetMyOrdersQueryHandler>();
 builder.Services.AddScoped<GetOrderByIdQueryHandler>();
+
+builder.Services.AddControllers();
 
 // ══════════════════════════════════════════════════════════════════════════
 // 3. VALIDATION
@@ -72,8 +74,7 @@ builder.Services
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                                           Encoding.UTF8.GetBytes(secretKey)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
             ClockSkew = TimeSpan.FromSeconds(30)
         };
 
@@ -82,7 +83,7 @@ builder.Services
             OnChallenge = async ctx =>
             {
                 ctx.HandleResponse();
-                ctx.Response.StatusCode = 401;
+                ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 ctx.Response.ContentType = "application/json";
                 await ctx.Response.WriteAsync(
                     """{"success":false,"message":"Authentication required."}""");
@@ -93,7 +94,7 @@ builder.Services
 builder.Services.AddAuthorization();
 
 // ══════════════════════════════════════════════════════════════════════════
-// 5. SWAGGER
+// 5. SWAGGER (v10 / OpenAPI v2 Delegate Syntax)
 // ══════════════════════════════════════════════════════════════════════════
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -115,13 +116,14 @@ builder.Services.AddSwaggerGen(options =>
         Description = "Paste your JWT token here."
     });
 
-    options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecuritySchemeReference("Bearer"),
-            new List<string>()
-        }
-    });
+    // Valid Swashbuckle v10 syntax using the delegate and OpenApiSecuritySchemeReference
+    //options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
+    //{
+    //    {
+    //        new OpenApiSecuritySchemeReference("Bearer"),
+    //        new List<string>()
+    //    }
+    //});
 });
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -135,8 +137,6 @@ builder.Services.AddCors(options =>
                   "http://localhost:5173")
               .AllowAnyHeader()
               .AllowAnyMethod()));
-
-builder.Services.AddControllers();
 
 // ══════════════════════════════════════════════════════════════════════════
 // MIDDLEWARE PIPELINE
@@ -154,21 +154,21 @@ if (app.Environment.IsDevelopment())
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "CapShop Order Service v1");
         c.RoutePrefix = string.Empty;
     });
-}
 
-if (!app.Environment.IsDevelopment())
-    app.UseHttpsRedirection();
-
-app.UseCors("GatewayOnly");
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-
-if (app.Environment.IsDevelopment())
-{
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<OrderDbContext>();
     await db.Database.MigrateAsync();
 }
+else
+{
+    app.UseHttpsRedirection();
+}
+
+app.UseCors("GatewayOnly");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
 
 app.Run();

@@ -10,7 +10,7 @@ The Order Service manages shopping carts and order processing. All endpoints req
 
 ## 🛒 Cart Management APIs
 
-Base route: `/orders/cart`
+Base route: `/x `
 
 ### 1. Get Active Cart
 Retrieves the current active shopping cart for the authenticated user.

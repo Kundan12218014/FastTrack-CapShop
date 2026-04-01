@@ -28,8 +28,14 @@ namespace CapShop.AuthService.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AuthenticatorKey")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("CurrentOtp")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -46,6 +52,9 @@ namespace CapShop.AuthService.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
+                    b.Property<DateTime?>("OtpExpiryTime")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -56,12 +65,18 @@ namespace CapShop.AuthService.Migrations
                         .HasMaxLength(15)
                         .HasColumnType("nvarchar(15)");
 
+                    b.Property<string>("PreferredTwoFactorMethod")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
                         .HasDefaultValue("Customer");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");

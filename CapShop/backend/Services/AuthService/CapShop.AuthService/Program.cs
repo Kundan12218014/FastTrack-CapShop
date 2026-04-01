@@ -6,6 +6,7 @@ using CapShop.AuthService.Domain.Interfaces;
 using CapShop.AuthService.Infrastructure.Persistence;
 using CapShop.AuthService.Infrastructure.Persistence.Repositories;
 using CapShop.AuthService.Infrastructure.Security;
+using CapShop.AuthService.Infrastructure.Services;
 using CapShop.Shared.Middleware;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -37,11 +38,14 @@ public partial class Program
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
         builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        builder.Services.AddScoped<IEmailService, EmailService>();
 
         //Application layers handlers
         builder.Services.AddScoped<RegisterUserCommandHandler>(); 
         builder.Services.AddScoped<LoginCommandHandler>();
         builder.Services.AddScoped<GetUserQueryHandler>();
+        builder.Services.AddScoped<VerifyTwoFactorCommandHandler>();
+        builder.Services.AddScoped<ManageTwoFactorCommandHandler>();
 
         //validation
         builder.Services.AddFluentValidationAutoValidation();

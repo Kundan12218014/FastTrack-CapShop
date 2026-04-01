@@ -32,6 +32,21 @@ namespace CapShop.AuthService.Application.DTOs
         [Required(ErrorMessage ="Password is required.")]
         public string Password { get; set; } = string.Empty;
     }
+
+    public class VerifyTwoFactorDto
+    {
+        [Required]
+        public string Email { get; set; } = string.Empty;
+        [Required]
+        public string Code { get; set; } = string.Empty;
+    }
+
+    public class EnableTwoFactorDto
+    {
+        [Required]
+        public string Method { get; set; } = "Email"; // "Email" or "Authenticator"
+    }
+
     public class UpdateProfileRequestDto
     {
         [Required]
@@ -56,6 +71,8 @@ namespace CapShop.AuthService.Application.DTOs
         public string PhoneNumber { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public bool IsActive { get; set; }
+        public bool TwoFactorEnabled { get; set; }
+        public string? PreferredTwoFactorMethod { get; set; }
         public DateTime CreatedAt { get; set; }
     }
         public class LoginResponseDto
@@ -64,5 +81,7 @@ namespace CapShop.AuthService.Application.DTOs
         public string Role { get; set; } = string.Empty;
         public UserDto User { get; set; } = null;
         public DateTime  ExpiresAt{ get; set; }
+        public bool RequiresTwoFactor { get; set; }
+        public string? TwoFactorMethod { get; set; }
     }
 }

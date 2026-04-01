@@ -4,11 +4,11 @@
             "UpstreamPathTemplate": "/gateway/admin/health",
             "UpstreamHttpMethod": [ "GET" ],
             "DownstreamPathTemplate": "/health",
-            "DownstreamScheme": "http",
+            "DownstreamScheme": "https",
             "DownstreamHostAndPorts": [
                 {
                     "Host": "localhost",
-                    "Port": 5104
+                    "Port": 5004
                 }
             ],
             "RouteId": "admin-health"
@@ -17,11 +17,11 @@
             "UpstreamPathTemplate": "/gateway/auth/{everything}",
             "UpstreamHttpMethod": [ "GET", "POST", "PUT", "PATCH", "DELETE" ],
             "DownstreamPathTemplate": "/auth/{everything}",
-            "DownstreamScheme": "http",
+            "DownstreamScheme": "https",
             "DownstreamHostAndPorts": [
                 {
                     "Host": "localhost",
-                    "Port": 5101
+                    "Port": 5001
                 }
             ],
             "RouteId": "auth-all"
@@ -30,11 +30,11 @@
             "UpstreamPathTemplate": "/gateway/catalog/{everything}",
             "UpstreamHttpMethod": [ "GET" ],
             "DownstreamPathTemplate": "/catalog/{everything}",
-            "DownstreamScheme": "http",
+            "DownstreamScheme": "https",
             "DownstreamHostAndPorts": [
                 {
                     "Host": "localhost",
-                    "Port": 5102
+                    "Port": 5002
                 }
             ],
             "RouteId": "catalog-read-public"
@@ -43,11 +43,11 @@
             "UpstreamPathTemplate": "/gateway/orders/{everything}",
             "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
             "DownstreamPathTemplate": "/orders/{everything}",
-            "DownstreamScheme": "http",
+            "DownstreamScheme": "https",
             "DownstreamHostAndPorts": [
                 {
                     "Host": "localhost",
-                    "Port": 5103
+                    "Port": 5003
                 }
             ],
             "AuthenticationOptions": {
@@ -60,11 +60,11 @@
             "UpstreamPathTemplate": "/gateway/admin/{everything}",
             "UpstreamHttpMethod": [ "GET", "POST", "PUT", "PATCH", "DELETE" ],
             "DownstreamPathTemplate": "/admin/{everything}",
-            "DownstreamScheme": "http",
+            "DownstreamScheme": "https",
             "DownstreamHostAndPorts": [
                 {
                     "Host": "localhost",
-                    "Port": 5104
+                    "Port": 5004
                 }
             ],
             "AuthenticationOptions": {

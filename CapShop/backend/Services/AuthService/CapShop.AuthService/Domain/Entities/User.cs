@@ -9,6 +9,13 @@
 
         public string PasswordHash { get; private set; } = string.Empty;
         public string Role { get; private set; } = UserRoles.Customer;
+        
+        public bool TwoFactorEnabled { get; private set; } = false;
+        public string? PreferredTwoFactorMethod { get; private set; } // "Email" or "Authenticator"
+        public string? AuthenticatorKey { get; private set; } 
+        public string? CurrentOtp { get; private set; } 
+        public DateTime? OtpExpiryTime { get; private set; }
+        
         public bool IsActive { get; private set; } = true;
         public DateTime CreatedAt { get; private set; }
         public DateTime UpdatedAt { get; private set; }
@@ -58,6 +65,44 @@
             }
             UpdatedAt = DateTime.UtcNow;
 
+        }
+
+        public void EnableTwoFactor(string method)
+        {
+            if (method != "Email" && method != "Authenticator")
+                throw new ArgumentException("Invalid 2FA method");
+            
+            TwoFactorEnabled = true;
+            PreferredTwoFactorMethod = method;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        public void DisableTwoFactor()
+        {
+            TwoFactorEnabled = false;
+            PreferredTwoFactorMethod = null;
+            AuthenticatorKey = null;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        public void SetAuthenticatorKey(string key)
+        {
+            AuthenticatorKey = key;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        public void SetOtp(string otp, int expiryMinutes = 5)
+        {
+            CurrentOtp = otp;
+            OtpExpiryTime = DateTime.UtcNow.AddMinutes(expiryMinutes);
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        public void ClearOtp()
+        {
+            CurrentOtp = null;
+            OtpExpiryTime = null;
+            UpdatedAt = DateTime.UtcNow;
         }
     }
 

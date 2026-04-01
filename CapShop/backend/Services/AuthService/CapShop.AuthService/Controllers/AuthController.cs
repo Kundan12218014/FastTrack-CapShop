@@ -17,14 +17,21 @@ public class AuthController : ControllerBase
     private readonly RegisterUserCommandHandler _registerHandler;
     private readonly LoginCommandHandler _loginHandler;
     private readonly GetUserQueryHandler _getUserHandler;
+    private readonly VerifyTwoFactorCommandHandler _verifyTwoFactorHandler;
+    private readonly ManageTwoFactorCommandHandler _manageTwoFactorHandler;
+
     public AuthController(
          RegisterUserCommandHandler registerHandler,
          LoginCommandHandler loginHandler,
-         GetUserQueryHandler getUserHandler)
+         GetUserQueryHandler getUserHandler,
+         VerifyTwoFactorCommandHandler verifyTwoFactorHandler,
+         ManageTwoFactorCommandHandler manageTwoFactorHandler)
     {
         _registerHandler = registerHandler;
         _loginHandler = loginHandler;
         _getUserHandler = getUserHandler;
+        _verifyTwoFactorHandler = verifyTwoFactorHandler;
+        _manageTwoFactorHandler = manageTwoFactorHandler;
     }
     [HttpPost("signup")]
     [AllowAnonymous]
@@ -54,9 +61,60 @@ public class AuthController : ControllerBase
     {
         var command = new LoginCommand(request.Email, request.Password);
         var result = await _loginHandler.Handle(command, ct);
+        
+        if (result.RequiresTwoFactor)
+        {
+            return Ok(ApiResponse<LoginResponseDto>.Ok(result, "Two-Factor Authentication required."));
+        }
+
         return Ok(ApiResponse<LoginResponseDto>.Ok(result,"Login Successful."));
 
     }
+
+    [HttpPost("verify-two-factor")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>),StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>),StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> VerifyTwoFactor(
+        [FromBody] VerifyTwoFactorDto request,
+        CancellationToken ct)
+    {
+        var command = new VerifyTwoFactorCommand(request.Email, request.Code);
+        var result = await _verifyTwoFactorHandler.Handle(command, ct);
+        return Ok(ApiResponse<LoginResponseDto>.Ok(result, "2FA verified and login successful."));
+    }
+
+    [HttpPost("enable-two-factor")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<object>),StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>),StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> EnableTwoFactor(
+        [FromBody] EnableTwoFactorDto request,
+        CancellationToken ct)
+    {
+        var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(userIdStr, out var userId))
+            return Unauthorized();
+
+        var command = new EnableTwoFactorCommand(userId, request.Method);
+        var res = await _manageTwoFactorHandler.HandleEnableAsync(command, ct);
+        return Ok(ApiResponse<object>.Ok(res, "Two-Factor Authentication enabled."));
+    }
+
+    [HttpPost("disable-two-factor")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<object>),StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>),StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> DisableTwoFactor(CancellationToken ct)
+    {
+        var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(userIdStr, out var userId))
+            return Unauthorized();
+
+        await _manageTwoFactorHandler.HandleDisableAsync(userId, ct);
+        return Ok(ApiResponse<object>.Ok(new { }, "Two-Factor Authentication disabled."));
+    }
+
     //get /auth/{id:guid}
     [HttpGet("users/{id:guid}")]
     [Authorize]

@@ -1,0 +1,195 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f2f6ef;
+  --bg-elevated: #e8f0e3;
+  --surface: #ffffff;
+  --surface-muted: #f7faf5;
+  --text: #243028;
+  --text-soft: #5b6b60;
+  --border-soft: #d8e4d5;
+  --primary: #1f6a3b;
+  --primary-strong: #175530;
+  --accent: #f59f00;
+  --danger: #d73636;
+  --success: #177c54;
+
+  --sans: "Outfit", "Segoe UI", sans-serif;
+  --heading: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", Consolas, monospace;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f1714;
+  --bg-elevated: #18241f;
+  --surface: #1f2b25;
+  --surface-muted: #25332c;
+  --text: #ebf3ee;
+  --text-soft: #b7c6bd;
+  --border-soft: #2f453b;
+  --primary: #66c48a;
+  --primary-strong: #4dae76;
+  --accent: #f5b433;
+  --danger: #ff7a7a;
+  --success: #84dcae;
+}
+
+#root {
+  width: 100%;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 12% -5%, rgba(113, 193, 133, 0.22) 0, transparent 36%),
+    radial-gradient(circle at 95% 0%, rgba(245, 177, 49, 0.2) 0, transparent 30%),
+    linear-gradient(180deg, var(--bg-elevated) 0%, var(--bg) 20%, var(--bg) 100%);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.45;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  color: var(--text);
+}
+
+h1 {
+  font-size: clamp(2rem, 3.6vw, 3.2rem);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+h2 {
+  font-size: clamp(1.15rem, 2vw, 1.6rem);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+p {
+  margin: 0;
+}
+
+code {
+  font-family: var(--mono);
+  background: color-mix(in oklab, var(--surface), #000 6%);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+
+/* ----------------------------------------------------------------------------
+   Custom Component Classes (Tailwind @layer)
+   ---------------------------------------------------------------------------- */
+
+@layer components {
+  .card {
+    @apply rounded-2xl border shadow-sm;
+    background: var(--surface);
+    border-color: var(--border-soft);
+    box-shadow: 0 8px 24px -18px rgba(15, 23, 42, 0.35);
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+    box-shadow: 0 8px 20px -12px color-mix(in oklab, var(--primary), #000 30%);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.04);
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-colors;
+    color: var(--text);
+    background: var(--surface-muted);
+    border: 1px solid var(--border-soft);
+  }
+
+  .btn-secondary:hover {
+    background: color-mix(in oklab, var(--surface-muted), #000 4%);
+  }
+
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl text-slate-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+    background: linear-gradient(135deg, #ffd45f 0%, var(--accent) 100%);
+    box-shadow: 0 10px 20px -14px rgba(245, 159, 0, 0.8);
+  }
+
+  .btn-accent:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.03);
+  }
+
+  .input-field {
+    @apply w-full px-3 py-2 rounded-xl text-sm transition-all focus:outline-none;
+    border: 1px solid var(--border-soft);
+    color: var(--text);
+    background: var(--surface-muted);
+  }
+
+  .input-field::placeholder {
+    color: color-mix(in oklab, var(--text-soft), #fff 20%);
+  }
+
+  .input-field:focus {
+    border-color: color-mix(in oklab, var(--primary), #fff 20%);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary), transparent 82%);
+  }
+
+  .input-error {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--danger), transparent 84%);
+  }
+
+  .badge {
+    @apply inline-block px-2 py-1 text-xs font-semibold rounded-full;
+    background: color-mix(in oklab, var(--primary), #fff 84%);
+    color: var(--primary-strong);
+  }
+
+  .badge-success {
+    background: color-mix(in oklab, var(--success), #fff 80%);
+    color: var(--success);
+  }
+
+  .badge-danger {
+    background: color-mix(in oklab, var(--danger), #fff 82%);
+    color: var(--danger);
+  }
+
+  .badge-warning {
+    background: color-mix(in oklab, var(--accent), #fff 80%);
+    color: #8a5a00;
+  }
+
+  .theme-switch {
+    @apply inline-flex items-center rounded-full p-1;
+    background: color-mix(in oklab, var(--surface), #000 8%);
+    border: 1px solid var(--border-soft);
+  }
+
+  .theme-switch-btn {
+    @apply h-7 w-7 rounded-full inline-flex items-center justify-center text-xs transition-all;
+    color: var(--text-soft);
+  }
+
+  .theme-switch-btn.active {
+    @apply shadow-sm;
+    color: var(--primary-strong);
+    background: var(--surface);
+  }
+}

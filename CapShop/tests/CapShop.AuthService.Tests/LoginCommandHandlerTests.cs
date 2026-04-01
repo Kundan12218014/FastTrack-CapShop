@@ -17,6 +17,7 @@ namespace CapShop.AuthService.Tests
         private Mock<IUserRepository> _userRepositoryMock;
         private Mock<IPasswordHasher> _passwordHasherMock;
         private Mock<IJwtTokenGenerator> _jwtTokenGeneratorMock;
+        private Mock<IEmailService> _emailServiceMock;
         private LoginCommandHandler _handler;
 
         [SetUp]
@@ -25,11 +26,13 @@ namespace CapShop.AuthService.Tests
             _userRepositoryMock = new Mock<IUserRepository>();
             _passwordHasherMock = new Mock<IPasswordHasher>();
             _jwtTokenGeneratorMock = new Mock<IJwtTokenGenerator>();
+            _emailServiceMock = new Mock<IEmailService>();
 
             _handler = new LoginCommandHandler(
                 _userRepositoryMock.Object,
                 _passwordHasherMock.Object,
-                _jwtTokenGeneratorMock.Object);
+                _jwtTokenGeneratorMock.Object,
+                _emailServiceMock.Object);
         }
 
         [Test]

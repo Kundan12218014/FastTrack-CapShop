@@ -9,15 +9,19 @@ public class LoginCommandHandler
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
+    private readonly IEmailService _emailService;
+
     public LoginCommandHandler(
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
-        IJwtTokenGenerator jwtTokenGenerator
+        IJwtTokenGenerator jwtTokenGenerator,
+        IEmailService emailService
         )
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
         _jwtTokenGenerator = jwtTokenGenerator;
+        _emailService = emailService;
     }
     public async Task<LoginResponseDto> Handle(
         LoginCommand command,
@@ -32,6 +36,29 @@ public class LoginCommandHandler
         var isValidPassword = _passwordHasher.Verify(command.Password, user.PasswordHash);
         if (!isValidPassword)
             throw new UnauthorizedException("Invalid email or password.");
+            
+        // Handle Two-Factor Authentication
+        if (user.TwoFactorEnabled)
+        {
+            if (user.PreferredTwoFactorMethod == "Email")
+            {
+                // Generate a random 6-digit OTP
+                var otp = new Random().Next(100000, 999999).ToString();
+                user.SetOtp(otp, 5); // Expiry in 5 minutes
+                await _userRepository.UpdateAsync(user, ct);
+                await _userRepository.SaveChangesAsync(ct);
+                
+                await _emailService.SendEmailAsync(user.Email, "Your CapShop Login OTP", $"Your one-time password is: <b>{otp}</b>. It is valid for 5 minutes.");
+                Console.WriteLine($"[EMAIL SENT] Sent OTP to {user.Email}");
+            }
+
+            return new LoginResponseDto
+            {
+                RequiresTwoFactor = true,
+                TwoFactorMethod = user.PreferredTwoFactorMethod
+            };
+        }
+
         //generate JWT
         var token = _jwtTokenGenerator.GenerateToken(user);
         var expiresAt = DateTime.UtcNow.AddMinutes(60);
@@ -40,6 +67,8 @@ public class LoginCommandHandler
             Token = token,
             Role = user.Role,
             ExpiresAt = expiresAt,
+            RequiresTwoFactor = false,
+            TwoFactorMethod = null,
             User = new UserDto
             {
                 Id = user.Id,
@@ -48,6 +77,8 @@ public class LoginCommandHandler
                 PhoneNumber = user.PhoneNumber,
                 Role = user.Role,
                 IsActive = user.IsActive,
+                TwoFactorEnabled = user.TwoFactorEnabled,
+                PreferredTwoFactorMethod = user.PreferredTwoFactorMethod,
                 CreatedAt = user.CreatedAt
             }
         };

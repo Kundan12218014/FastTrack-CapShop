@@ -8,6 +8,8 @@ export const ROUTES = {
   HOME: "/",
   LOGIN: "/auth/login",
   SIGNUP: "/auth/signup",
+  FORGOT_PASSWORD: "/auth/forgot-password",
+  RESET_PASSWORD: "/auth/reset-password",
 
   // Customer (protected by CustomerGuard)
   CUSTOMER: {
@@ -19,6 +21,7 @@ export const ROUTES = {
     ORDERS: "/customer/orders",
     ORDER_DETAIL: "/customer/orders/:id",
     ORDER_CONFIRM: "/customer/order-confirmation/:id",
+    SECURITY: "/customer/security",
   },
 
   // Admin (protected by AdminGuard)

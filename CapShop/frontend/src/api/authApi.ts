@@ -5,6 +5,9 @@ import type {
   LoginResponseDto,
   SignupRequestDto,
   UserDto,
+  VerifyTwoFactorDto,
+  EnableTwoFactorDto,
+  EnableTwoFactorResponseDto,
 } from "../types/auth.types";
 
 function unwrapResponse<T>(payload: ApiResponse<T> | T): T {
@@ -62,8 +65,56 @@ export const authApi = {
     );
     return unwrapResponse<UserDto>(response.data);
   },
+
+  /**
+   * POST /gateway/auth/verify-two-factor
+   * Authenticate using 2FA OTP code.
+   */
+  verifyTwoFactor: async (data: VerifyTwoFactorDto): Promise<LoginResponseDto> => {
+    const response = await apiClient.post<
+      ApiResponse<LoginResponseDto> | LoginResponseDto
+    >("/auth/verify-two-factor", data);
+    return unwrapResponse<LoginResponseDto>(response.data);
+  },
+
+  /**
+   * POST /gateway/auth/enable-two-factor
+   * Enable 2FA for the current user. Requires valid JWT.
+   */
+  enableTwoFactor: async (data: EnableTwoFactorDto): Promise<EnableTwoFactorResponseDto> => {
+    const response = await apiClient.post<
+      ApiResponse<EnableTwoFactorResponseDto> | EnableTwoFactorResponseDto
+    >("/auth/enable-two-factor", data);
+    return unwrapResponse<EnableTwoFactorResponseDto>(response.data);
+  },
+
+  /**
+   * POST /gateway/auth/disable-two-factor
+   * Disable 2FA for the current user. Requires valid JWT.
+   */
+  disableTwoFactor: async (): Promise<void> => {
+    await apiClient.post("/auth/disable-two-factor");
+  },
+
+  /**
+   * POST /gateway/auth/forgot-password
+   */
+  forgotPassword: async (data: { email: string }): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>("/auth/forgot-password", data);
+    return unwrapResponse<{ message: string }>(response.data);
+  },
+
+  /**
+   * POST /gateway/auth/reset-password
+   */
+  resetPassword: async (data: { email: string; code: string; newPassword: string }): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>("/auth/reset-password", data);
+    return unwrapResponse<{ message: string }>(response.data);
+  },
 };
 
 export const login = authApi.login;
 export const signup = authApi.signup;
 export const getUserById = authApi.getUserById;
+export const forgotPassword = authApi.forgotPassword;
+export const resetPassword = authApi.resetPassword;

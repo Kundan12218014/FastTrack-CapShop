@@ -1,16 +1,17 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { ShoppingCart, User, LogOut, Sun, Moon } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { ShoppingCart, Sun, Moon } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { ROUTES } from "../../constants/routes";
 import { useEffect, useState } from "react";
-import { getCart } from "../../api/orderApi";
 import { applyTheme, initTheme, type AppTheme } from "../../utils/theme";
+import { useCartStore } from "../../store/cartStore";
+import { ProfileDropdown } from "./ProfileDropdown";
+import { LocationSelector } from "./LocationSelector";
 
 export const Navbar = () => {
-  const { isAuthenticated, role, user, clearAuth } = useAuthStore();
-  const navigate  = useNavigate();
+  const { isAuthenticated, role } = useAuthStore();
   const location  = useLocation();
-  const [cartCount, setCartCount] = useState(0);
+  const { itemCount, cart, fetchCart } = useCartStore();
   const [theme, setTheme] = useState<AppTheme>("light");
 
   useEffect(() => {
@@ -19,18 +20,13 @@ export const Navbar = () => {
 
   useEffect(() => {
     if (isAuthenticated && role === "Customer") {
-      getCart().then(c => setCartCount(c.itemCount)).catch(() => {});
+      fetchCart();
     }
   }, [isAuthenticated, role, location.pathname]);
 
   const handleThemeChange = (nextTheme: AppTheme) => {
     setTheme(nextTheme);
     applyTheme(nextTheme);
-  };
-
-  const handleLogout = () => {
-    clearAuth();
-    navigate(ROUTES.LOGIN);
   };
 
   const isAdmin = role === "Admin";
@@ -42,19 +38,21 @@ export const Navbar = () => {
         {/* Logo */}
         <Link
           to={isAdmin ? ROUTES.ADMIN.DASHBOARD : ROUTES.CUSTOMER.HOME}
-          className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-[color:var(--primary-strong)]"
+          className="flex items-center gap-2 group flex-shrink-0"
         >
-          CAPSHOP {isAdmin && <span className="text-[color:var(--accent)] text-xs sm:text-sm ml-1">| Admin</span>}
+          <img src="/logo.png" alt="CapShop Logo" className="h-9 w-auto object-contain drop-shadow-sm" />
+          {isAdmin && <span className="text-[color:var(--accent)] text-xs sm:text-sm font-extrabold ml-1">| Admin</span>}
         </Link>
 
-        {/* Customer nav links */}
+        {/* Customer nav links & Location */}
         {!isAdmin && (
-          <div className="hidden lg:flex items-center gap-5 text-sm font-semibold text-[color:var(--text-soft)]">
-            <Link to={ROUTES.CUSTOMER.HOME}     className="hover:text-[color:var(--primary)] transition-colors">Home</Link>
-            <Link to={ROUTES.CUSTOMER.PRODUCTS} className="hover:text-[color:var(--primary)] transition-colors">Shop</Link>
-            <Link to={ROUTES.CUSTOMER.PRODUCTS} className="hover:text-[color:var(--primary)] transition-colors">Deals</Link>
-            <Link to={ROUTES.CUSTOMER.ORDERS}   className="hover:text-[color:var(--primary)] transition-colors">Orders</Link>
-            <span className="hover:text-[color:var(--primary)] transition-colors cursor-pointer">Support</span>
+          <div className="flex items-center gap-4 text-sm font-semibold text-[color:var(--text-soft)]">
+            <LocationSelector />
+            <div className="hidden lg:flex items-center gap-5 ml-4">
+              <Link to={ROUTES.CUSTOMER.HOME}     className="hover:text-[color:var(--primary)] transition-colors">Home</Link>
+              <Link to={ROUTES.CUSTOMER.PRODUCTS} className="hover:text-[color:var(--primary)] transition-colors">Shop</Link>
+              <Link to={ROUTES.CUSTOMER.PRODUCTS} className="hover:text-[color:var(--primary)] text-orange-500 font-bold transition-colors flex items-center gap-1">Deals</Link>
+            </div>
           </div>
         )}
 
@@ -92,24 +90,25 @@ export const Navbar = () => {
           {isAuthenticated ? (
             <>
               {!isAdmin && (
-                <Link to={ROUTES.CUSTOMER.CART} className="relative p-2 rounded-xl hover:bg-[color:var(--surface-muted)] text-[color:var(--text-soft)] hover:text-[color:var(--primary)] transition-colors">
-                  <ShoppingCart size={20} />
-                  {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-[color:var(--accent)] text-slate-900 text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-extrabold">
-                      {cartCount > 9 ? "9+" : cartCount}
-                    </span>
+                <Link to={ROUTES.CUSTOMER.CART} className="ml-2 group active:scale-95 transition-transform flex items-center justify-center">
+                  {itemCount > 0 ? (
+                    <div className="bg-[#1f9347] hover:bg-[#187538] text-white px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm shrink-0 min-w-[90px]">
+                      <ShoppingCart size={18} />
+                      <div className="flex flex-col items-start leading-[1.1]">
+                        <span className="text-[11px] font-bold opacity-90">{itemCount} items</span>
+                        <span className="text-[13px] font-extrabold tracking-tight">₹{cart?.total?.toLocaleString("en-IN") || 0}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-[#f3f4f6] hover:bg-[#e5e7eb] text-gray-800 px-4 py-2 rounded-lg flex items-center gap-2 font-bold text-sm shrink-0">
+                      <ShoppingCart size={18} /> My Cart
+                    </div>
                   )}
                 </Link>
               )}
-              <div className="hidden sm:flex items-center gap-2 text-sm text-[color:var(--text-soft)]">
-                <User size={16} />
-                <span className="font-semibold">{user?.fullName?.split(" ")[0]}</span>
+              <div className="ml-2">
+                <ProfileDropdown />
               </div>
-              <button onClick={handleLogout}
-                className="flex items-center gap-1 text-sm rounded-xl px-2 py-1.5 text-[color:var(--text-soft)] hover:bg-[color:var(--surface-muted)] hover:text-[color:var(--primary)] transition-colors">
-                <LogOut size={16} />
-                <span className="hidden md:inline font-semibold">Logout</span>
-              </button>
             </>
           ) : (
             <Link to={ROUTES.LOGIN}

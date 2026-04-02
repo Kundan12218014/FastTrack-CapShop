@@ -36,13 +36,32 @@ export interface LoginRequestDto {
   password: string;
 }
 
+export interface VerifyTwoFactorDto {
+  email: string;
+  code: string;
+}
+
+export interface EnableTwoFactorDto {
+  method: "Email" | "Authenticator";
+}
+
+export interface EnableTwoFactorResponseDto {
+  message?: string;
+  method?: string;
+  authenticatorKey?: string;
+  qrCodeUri?: string;
+}
+
 export interface AuthState {
   token: string | null;
   user: UserDto | null;
   role: "Customer" | "Admin" | null;
   isAuthenticated: boolean;
   hasHydrated: boolean;
+  pendingTwoFactorEmail: string | null;
+  
   setAuth: (token: string, user: UserDto, role: "Customer" | "Admin") => void;
   clearAuth: () => void;
   setHasHydrated: (hasHydrated: boolean) => void;
+  setPendingTwoFactor: (email: string | null) => void;
 }

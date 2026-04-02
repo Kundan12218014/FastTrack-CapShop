@@ -46,6 +46,8 @@ public partial class Program
         builder.Services.AddScoped<GetUserQueryHandler>();
         builder.Services.AddScoped<VerifyTwoFactorCommandHandler>();
         builder.Services.AddScoped<ManageTwoFactorCommandHandler>();
+        builder.Services.AddScoped<ForgotPasswordCommandHandler>();
+        builder.Services.AddScoped<ResetPasswordCommandHandler>();
 
         //validation
         builder.Services.AddFluentValidationAutoValidation();

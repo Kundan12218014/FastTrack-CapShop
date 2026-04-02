@@ -1,4 +1,4 @@
-﻿namespace CapShop.AuthService.Domain.Entities
+namespace CapShop.AuthService.Domain.Entities
 {
     public class User
     {
@@ -102,6 +102,15 @@
         {
             CurrentOtp = null;
             OtpExpiryTime = null;
+            UpdatedAt = DateTime.UtcNow;
+        }
+
+        public void UpdatePasswordHash(string newPasswordHash)
+        {
+            if (string.IsNullOrWhiteSpace(newPasswordHash))
+                throw new ArgumentException("Password hash cannot be empty.");
+            
+            PasswordHash = newPasswordHash;
             UpdatedAt = DateTime.UtcNow;
         }
     }

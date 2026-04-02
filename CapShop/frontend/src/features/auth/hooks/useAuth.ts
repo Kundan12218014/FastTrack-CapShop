@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getUserById, login, signup } from "../../../api/authApi";
+import { getUserById, login, signup, authApi } from "../../../api/authApi";
 import { useAuthStore } from "../../../store/authStore";
 import { useCartStore } from "../../../store/cartStore";
 import { ROUTES } from "../../../constants/routes";
@@ -58,10 +58,8 @@ export const useAuth = () => {
       const result = await login(data);
 
       if (result.requiresTwoFactor) {
-        const method = result.twoFactorMethod ?? "Email";
-        setError(
-          `Two-factor authentication required (${method}). Verify your OTP to continue.`,
-        );
+        useAuthStore.getState().setPendingTwoFactor(data.email);
+        showToast.success(`OTP sent to your ${result.twoFactorMethod?.toLowerCase() || 'device'}`);
         return;
       }
 
@@ -145,5 +143,56 @@ export const useAuth = () => {
     navigate(ROUTES.LOGIN, { replace: true });
   };
 
-  return { handleLogin, handleSignup, handleLogout, loading, error };
+  // ── Two Factor Verify ───────────────────────────────────────────────────
+  const handleVerifyTwoFactor = async (code: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const email = useAuthStore.getState().pendingTwoFactorEmail;
+      if (!email) throw new Error("No pending 2FA session.");
+
+      const result = await authApi.verifyTwoFactor({ email, code });
+
+      if (!result.token) {
+        setError("Verification response did not include a token.");
+        return;
+      }
+
+      const payload = decodeJwtPayload(result.token) ?? {};
+      const role = result.role ?? result.user?.role ?? getRoleFromPayload(payload);
+      const userId = result.user?.id ?? getUserIdFromPayload(payload);
+
+      if (!role) {
+        setError("Could not determine user role from verification response.");
+        return;
+      }
+
+      let user: UserDto;
+      if (result.user) user = result.user;
+      else if (userId) user = await getUserById(userId);
+      else throw new Error("Could not construct user profile.");
+
+      setAuth(result.token, user, role);
+      showToast.success("Verification successful!");
+
+      // Redirect
+      const from = (location.state as { from?: Location })?.from?.pathname;
+      if (from && !from.startsWith("/auth")) {
+        navigate(from, { replace: true });
+      } else if (role === "Admin") {
+        navigate(ROUTES.ADMIN.DASHBOARD, { replace: true });
+      } else {
+        navigate(ROUTES.CUSTOMER.HOME, { replace: true });
+      }
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? "Invalid or expired code.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { handleLogin, handleSignup, handleLogout, handleVerifyTwoFactor, loading, error };
 };

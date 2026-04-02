@@ -8,6 +8,8 @@ import { AdminLayout }    from "../layouts/AdminLayout";
 
 // Auth
 import { AuthPage } from "../features/auth/pages/AuthPage";
+import { ForgotPasswordPage } from "../features/auth/pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "../features/auth/pages/ResetPasswordPage";
 
 // Customer pages
 import { HomePage }             from "../features/catalog/pages/HomePage";
@@ -17,6 +19,7 @@ import { CartPage }             from "../features/cart/pages/CartPage";
 import { CheckoutPage }         from "../features/checkout/pages/CheckoutPage";
 import { OrderHistoryPage }     from "../features/orders/pages/OrderHistoryPage";
 import { OrderConfirmationPage } from "../features/orders/pages/OrderConfirmationPage";
+import { SecurityPage }         from "../features/account/pages/SecurityPage";
 
 // Admin pages
 import { AdminDashboard }    from "../features/admin/pages/AdminDashboard";
@@ -46,6 +49,8 @@ export const AppRouter = () => (
       {/* Auth (both login + signup use same AuthPage component) */}
       <Route path="/auth/login"  element={<AuthPage />} />
       <Route path="/auth/signup" element={<AuthPage />} />
+      <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+      <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
 
       {/* Customer routes */}
       <Route element={<CustomerLayout />}>
@@ -61,6 +66,7 @@ export const AppRouter = () => (
           <Route path={ROUTES.CUSTOMER.ORDERS}           element={<OrderHistoryPage />} />
           <Route path={ROUTES.CUSTOMER.ORDER_DETAIL}     element={<OrderHistoryPage />} />
           <Route path={ROUTES.CUSTOMER.ORDER_CONFIRM} element={<OrderConfirmationPage />} />
+          <Route path={ROUTES.CUSTOMER.SECURITY}         element={<SecurityPage />} />
         </Route>
       </Route>
 

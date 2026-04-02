@@ -1,28 +1,30 @@
 import { create } from "zustand";
+import { getCart, type CartDto } from "../api/orderApi";
 
-/**
- * Client-side cart count store.
- * The actual cart data lives in the backend (Order Service).
- * This store just holds the item count for the Navbar badge
- * so we don't need to refetch the full cart on every page.
- *
- * Updated after:
- *  - addToCart API call succeeds
- *  - removeCartItem API call succeeds
- *  - getCart API call completes (sync from server)
- */
 interface CartState {
+  cart: CartDto | null;
   itemCount: number;
-  setItemCount: (count: number) => void;
-  increment: () => void;
-  decrement: () => void;
+  isSyncing: boolean;
+  setCart: (cart: CartDto | null) => void;
+  fetchCart: () => Promise<void>;
   reset: () => void;
 }
 
 export const useCartStore = create<CartState>()((set) => ({
+  cart: null,
   itemCount: 0,
-  setItemCount: (count) => set({ itemCount: count }),
-  increment: () => set((s) => ({ itemCount: s.itemCount + 1 })),
-  decrement: () => set((s) => ({ itemCount: Math.max(0, s.itemCount - 1) })),
-  reset: () => set({ itemCount: 0 }),
+  isSyncing: false,
+  setCart: (cart) => set({ cart, itemCount: cart?.itemCount || 0 }),
+  fetchCart: async () => {
+    set({ isSyncing: true });
+    try {
+      const c = await getCart();
+      set({ cart: c, itemCount: c.itemCount });
+    } catch {
+      // If unauthorized or fails, keep it silent or handle generically
+    } finally {
+      set({ isSyncing: false });
+    }
+  },
+  reset: () => set({ cart: null, itemCount: 0, isSyncing: false }),
 }));

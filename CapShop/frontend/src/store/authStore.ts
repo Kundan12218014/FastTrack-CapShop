@@ -20,12 +20,15 @@ export const useAuthStore = create<AuthState>()(
       role: null,
       isAuthenticated: false,
       hasHydrated: false,
+      pendingTwoFactorEmail: null,
 
       setAuth: (token, user, role) =>
-        set({ token, user, role, isAuthenticated: true }),
+        set({ token, user, role, isAuthenticated: true, pendingTwoFactorEmail: null }),
 
       clearAuth: () =>
-        set({ token: null, user: null, role: null, isAuthenticated: false }),
+        set({ token: null, user: null, role: null, isAuthenticated: false, pendingTwoFactorEmail: null }),
+
+      setPendingTwoFactor: (email) => set({ pendingTwoFactorEmail: email }),
 
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
     }),
@@ -40,6 +43,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         role: state.role,
         isAuthenticated: state.isAuthenticated,
+        pendingTwoFactorEmail: state.pendingTwoFactorEmail,
       }),
     },
   ),

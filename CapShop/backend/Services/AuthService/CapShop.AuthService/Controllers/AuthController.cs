@@ -1,4 +1,4 @@
-﻿using CapShop.AuthService.Application.Commands;
+using CapShop.AuthService.Application.Commands;
 using CapShop.AuthService.Application.DTOs;
 using CapShop.AuthService.Application.Queries;
 using CapShop.AuthService.Domain.Entities;
@@ -19,19 +19,25 @@ public class AuthController : ControllerBase
     private readonly GetUserQueryHandler _getUserHandler;
     private readonly VerifyTwoFactorCommandHandler _verifyTwoFactorHandler;
     private readonly ManageTwoFactorCommandHandler _manageTwoFactorHandler;
+    private readonly ForgotPasswordCommandHandler _forgotPasswordHandler;
+    private readonly ResetPasswordCommandHandler _resetPasswordHandler;
 
     public AuthController(
          RegisterUserCommandHandler registerHandler,
          LoginCommandHandler loginHandler,
          GetUserQueryHandler getUserHandler,
          VerifyTwoFactorCommandHandler verifyTwoFactorHandler,
-         ManageTwoFactorCommandHandler manageTwoFactorHandler)
+         ManageTwoFactorCommandHandler manageTwoFactorHandler,
+         ForgotPasswordCommandHandler forgotPasswordHandler,
+         ResetPasswordCommandHandler resetPasswordHandler)
     {
         _registerHandler = registerHandler;
         _loginHandler = loginHandler;
         _getUserHandler = getUserHandler;
         _verifyTwoFactorHandler = verifyTwoFactorHandler;
         _manageTwoFactorHandler = manageTwoFactorHandler;
+        _forgotPasswordHandler = forgotPasswordHandler;
+        _resetPasswordHandler = resetPasswordHandler;
     }
     [HttpPost("signup")]
     [AllowAnonymous]
@@ -113,6 +119,31 @@ public class AuthController : ControllerBase
 
         await _manageTwoFactorHandler.HandleDisableAsync(userId, ct);
         return Ok(ApiResponse<object>.Ok(new { }, "Two-Factor Authentication disabled."));
+    }
+
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<object>),StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordRequestDto request,
+        CancellationToken ct)
+    {
+        var command = new ForgotPasswordCommand(request.Email);
+        var result = await _forgotPasswordHandler.Handle(command, ct);
+        return Ok(ApiResponse<object>.Ok(result, "Password reset attempt processed."));
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<object>),StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>),StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordRequestDto request,
+        CancellationToken ct)
+    {
+        var command = new ResetPasswordCommand(request.Email, request.Code, request.NewPassword);
+        var result = await _resetPasswordHandler.Handle(command, ct);
+        return Ok(ApiResponse<object>.Ok(result, "Password successfully reset."));
     }
 
     //get /auth/{id:guid}

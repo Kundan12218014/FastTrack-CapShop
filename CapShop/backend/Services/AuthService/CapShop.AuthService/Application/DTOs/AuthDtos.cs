@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 namespace CapShop.AuthService.Application.DTOs
 {
     //request DTO 
@@ -83,5 +83,26 @@ namespace CapShop.AuthService.Application.DTOs
         public DateTime  ExpiresAt{ get; set; }
         public bool RequiresTwoFactor { get; set; }
         public string? TwoFactorMethod { get; set; }
+    }
+
+    public class ForgotPasswordRequestDto
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class ResetPasswordRequestDto
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string Code { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be at least 8 characters.")]
+        public string NewPassword { get; set; } = string.Empty;
     }
 }

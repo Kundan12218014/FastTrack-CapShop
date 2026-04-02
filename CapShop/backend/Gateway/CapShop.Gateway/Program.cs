@@ -62,51 +62,8 @@ builder.Services
         // Return clean JSON 401 — not an HTML redirect page
         options.Events = new JwtBearerEvents
         {
-            // TEMP DEBUG START: Remove this block after troubleshooting 401 issues.
-            OnMessageReceived = context =>
-            {
-                var logger = context.HttpContext.RequestServices
-                    .GetRequiredService<ILoggerFactory>()
-                    .CreateLogger("Gateway.JwtDebug");
-
-                var authHeader = context.Request.Headers.Authorization.ToString();
-                var hasAuthHeader = !string.IsNullOrWhiteSpace(authHeader);
-                var hasBearerPrefix = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
-
-                logger.LogInformation(
-                    "JWT incoming request. Path: {Path}. Authorization header present: {HasAuthHeader}. Bearer scheme used: {HasBearerPrefix}.",
-                    context.Request.Path,
-                    hasAuthHeader,
-                    hasBearerPrefix);
-
-                return Task.CompletedTask;
-            },
-            OnAuthenticationFailed = context =>
-            {
-                var logger = context.HttpContext.RequestServices
-                    .GetRequiredService<ILoggerFactory>()
-                    .CreateLogger("Gateway.JwtDebug");
-
-                logger.LogWarning(
-                    context.Exception,
-                    "JWT validation failed for path {Path}. Reason: {Message}",
-                    context.Request.Path,
-                    context.Exception.Message);
-
-                return Task.CompletedTask;
-            },
             OnChallenge = async context =>
             {
-                var logger = context.HttpContext.RequestServices
-                    .GetRequiredService<ILoggerFactory>()
-                    .CreateLogger("Gateway.JwtDebug");
-
-                logger.LogWarning(
-                    "JWT challenge triggered. Path: {Path}. Error: {Error}. Description: {ErrorDescription}",
-                    context.Request.Path,
-                    context.Error,
-                    context.ErrorDescription);
-
                 context.HandleResponse();
                 context.Response.StatusCode = 401;
                 context.Response.ContentType = "application/json";
@@ -115,20 +72,11 @@ builder.Services
             },
             OnForbidden = async context =>
             {
-                var logger = context.HttpContext.RequestServices
-                    .GetRequiredService<ILoggerFactory>()
-                    .CreateLogger("Gateway.JwtDebug");
-
-                logger.LogWarning(
-                    "JWT forbidden triggered. Path: {Path}. User authenticated but lacks required access.",
-                    context.Request.Path);
-
                 context.Response.StatusCode = 403;
                 context.Response.ContentType = "application/json";
                 await context.Response.WriteAsync(
                     """{"success":false,"message":"You do not have permission to access this resource."}""");
             }
-            // TEMP DEBUG END
         };
     });
 

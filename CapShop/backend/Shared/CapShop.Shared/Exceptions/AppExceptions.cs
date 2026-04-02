@@ -1,12 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace CapShop.Shared.Exceptions
 {
-    //Each exception calls could map specifiv Http status code
-    //we could livves the GloblaExceptionMiddleware not here
-    //domain code just throw the right exceptions; middle ware could handle it
+    // Each exception maps to a specific HTTP status code.
+    // Domain code throws the right exception; GlobalExceptionMiddleware handles it.
 
 
 
@@ -49,7 +48,7 @@ namespace CapShop.Shared.Exceptions
 
     //403 Forbidden( authenticated but not authorized for this resource access)
     public class ForbiddenException : Exception {
-        public ForbiddenException(string message = "You do have permission to perform this action.") : base(message) { }
+        public ForbiddenException(string message = "You don't have permission to perform this action.") : base(message) { }
     }
     public class ServiceUnavailableException : Exception
     {

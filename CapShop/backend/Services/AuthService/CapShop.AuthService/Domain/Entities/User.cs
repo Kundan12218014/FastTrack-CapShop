@@ -1,4 +1,4 @@
-﻿namespace CapShop.AuthService.Domain.Entities
+namespace CapShop.AuthService.Domain.Entities
 {
     public class User
     {
@@ -57,14 +57,13 @@
         {
             if (!string.IsNullOrWhiteSpace(fullName))
             {
-                FullName = FullName.Trim();
+                FullName = fullName.Trim();
             }
             if (!string.IsNullOrWhiteSpace(phoneNumber))
             {
                 PhoneNumber = phoneNumber.Trim();
             }
             UpdatedAt = DateTime.UtcNow;
-
         }
 
         public void EnableTwoFactor(string method)

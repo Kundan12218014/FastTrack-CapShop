@@ -54,6 +54,34 @@ export interface AdminPagedResult<T> {
   totalPages: number;
 }
 
+// ── REPORTS ───────────────────────────────────────────────────────────────
+
+export interface DailySalesDto {
+  date: string;
+  revenue: number;
+  orders: number;
+}
+
+export interface SalesReportDto {
+  from: string;
+  to: string;
+  totalRevenue: number;
+  totalOrders: number;
+  averageOrderValue: number;
+  dailyBreakdown: DailySalesDto[];
+}
+
+export interface StatusCountDto {
+  status: string;
+  count: number;
+  percentage: number;
+}
+
+export interface StatusSplitReportDto {
+  totalOrders: number;
+  statusBreakdown: StatusCountDto[];
+}
+
 export async function getDashboardSummary(): Promise<DashboardSummaryDto> {
   const res = await apiClient.get<ApiResponse<DashboardSummaryDto>>(
     "/admin/dashboard/summary",
@@ -135,16 +163,57 @@ export async function updateOrderStatus(
   await apiClient.put(`/admin/orders/${id}/status`, { newStatus, remarks });
 }
 
-export async function getSalesReport(from: string, to: string): Promise<any> {
-  const res = await apiClient.get<ApiResponse<any>>("/admin/reports/sales", {
+export async function getSalesReport(
+  from?: string,
+  to?: string,
+): Promise<SalesReportDto> {
+  const res = await apiClient.get<ApiResponse<SalesReportDto>>("/admin/reports/sales", {
     params: { from, to },
   });
   return res.data.data!;
 }
 
-export async function getStatusSplit(): Promise<any> {
-  const res = await apiClient.get<ApiResponse<any>>(
+export async function getStatusSplit(): Promise<StatusSplitReportDto> {
+  const res = await apiClient.get<ApiResponse<StatusSplitReportDto>>(
     "/admin/reports/status-split",
   );
   return res.data.data!;
+}
+
+/** Downloads a CSV file of the sales report for the given date range. */
+export async function exportSalesCsv(from?: string, to?: string): Promise<void> {
+  const res = await apiClient.get("/admin/reports/sales/export/csv", {
+    params: { from, to },
+    responseType: "blob",
+  });
+  _triggerDownload(res.data, "sales-report.csv", "text/csv");
+}
+
+/** Downloads an HTML print-ready sales report. */
+export async function exportSalesHtml(from?: string, to?: string): Promise<void> {
+  const res = await apiClient.get("/admin/reports/sales/export/html", {
+    params: { from, to },
+    responseType: "blob",
+  });
+  _triggerDownload(res.data, "sales-report.html", "text/html");
+}
+
+/** Downloads a CSV file of the order status split. */
+export async function exportStatusSplitCsv(): Promise<void> {
+  const res = await apiClient.get("/admin/reports/status-split/export/csv", {
+    responseType: "blob",
+  });
+  _triggerDownload(res.data, "status-split.csv", "text/csv");
+}
+
+/** Helper: triggers a browser file download from a Blob response. */
+function _triggerDownload(data: Blob, filename: string, mimeType: string): void {
+  const url = window.URL.createObjectURL(new Blob([data], { type: mimeType }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 }

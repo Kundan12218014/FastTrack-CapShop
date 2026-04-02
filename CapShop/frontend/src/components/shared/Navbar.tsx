@@ -1,124 +1,116 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { ShoppingCart, User, LogOut, Sun, Moon } from "lucide-react";
-import { useAuthStore } from "../../store/authStore";
-import { ROUTES } from "../../constants/routes";
-import { useEffect, useState } from "react";
-import { getCart } from "../../api/orderApi";
-import { applyTheme, initTheme, type AppTheme } from "../../utils/theme";
+import { Link, useLocation } from 'react-router-dom';
+import { useTheme } from '../../store/useTheme';
+import { ROUTES } from '../../constants/routes';
+import { useCartStore } from '../../store/cartStore';
+import { useAuthStore } from '../../store/authStore';
+import { Moon, Sun, User, Search, MapPin, Store, Home, ReceiptText, ShoppingCart } from 'lucide-react';
 
 export const Navbar = () => {
-  const { isAuthenticated, role, user, clearAuth } = useAuthStore();
-  const navigate  = useNavigate();
-  const location  = useLocation();
-  const [cartCount, setCartCount] = useState(0);
-  const [theme, setTheme] = useState<AppTheme>("light");
+  const { isDarkMode, toggleTheme } = useTheme();
+  const location = useLocation();
+  const { itemCount } = useCartStore();
+  const { isAuthenticated } = useAuthStore();
 
-  useEffect(() => {
-    setTheme(initTheme());
-  }, []);
+  const isHome = location.pathname === ROUTES.CUSTOMER.HOME;
 
-  useEffect(() => {
-    if (isAuthenticated && role === "Customer") {
-      getCart().then(c => setCartCount(c.itemCount)).catch(() => {});
-    }
-  }, [isAuthenticated, role, location.pathname]);
-
-  const handleThemeChange = (nextTheme: AppTheme) => {
-    setTheme(nextTheme);
-    applyTheme(nextTheme);
-  };
-
-  const handleLogout = () => {
-    clearAuth();
-    navigate(ROUTES.LOGIN);
-  };
-
-  const isAdmin = role === "Admin";
+  const isActive = (path: string) =>
+    location.pathname === path || location.pathname.startsWith(path + "/");
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-[var(--border-soft)] bg-[color:var(--surface)]/95 backdrop-blur">
-      <div className="max-w-7xl mx-auto px-4 sm:px-5 flex items-center justify-between h-14 gap-3">
-
-        {/* Logo */}
-        <Link
-          to={isAdmin ? ROUTES.ADMIN.DASHBOARD : ROUTES.CUSTOMER.HOME}
-          className="font-display text-lg sm:text-xl font-extrabold tracking-tight text-[color:var(--primary-strong)]"
-        >
-          CAPSHOP {isAdmin && <span className="text-[color:var(--accent)] text-xs sm:text-sm ml-1">| Admin</span>}
-        </Link>
-
-        {/* Customer nav links */}
-        {!isAdmin && (
-          <div className="hidden lg:flex items-center gap-5 text-sm font-semibold text-[color:var(--text-soft)]">
-            <Link to={ROUTES.CUSTOMER.HOME}     className="hover:text-[color:var(--primary)] transition-colors">Home</Link>
-            <Link to={ROUTES.CUSTOMER.PRODUCTS} className="hover:text-[color:var(--primary)] transition-colors">Shop</Link>
-            <Link to={ROUTES.CUSTOMER.PRODUCTS} className="hover:text-[color:var(--primary)] transition-colors">Deals</Link>
-            <Link to={ROUTES.CUSTOMER.ORDERS}   className="hover:text-[color:var(--primary)] transition-colors">Orders</Link>
-            <span className="hover:text-[color:var(--primary)] transition-colors cursor-pointer">Support</span>
+    <nav className={`w-full bg-[color:var(--surface)] sticky top-0 z-50 transition-colors duration-300 border-b border-[color:var(--border-soft)] ${!isHome ? 'shadow-sm' : ''}`}>
+      
+      {/* Top Bar: Location & Desktop Navigation & Actions */}
+      <div className="max-w-screen-xl mx-auto flex items-center justify-between px-4 py-3 md:py-4">
+        
+        {/* Brand & Location (Left) */}
+        <div className="flex items-center gap-6 cursor-pointer group">
+          <Link to={ROUTES.CUSTOMER.HOME} className="min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="font-heading font-extrabold text-xl text-[color:var(--text)] tracking-tight leading-none group-hover:text-[color:var(--primary)] transition-colors">
+                CapShop
+              </span>
+            </div>
+            <div className="flex items-center gap-1 opacity-80">
+              <span className="text-[11px] font-semibold text-[color:var(--primary)] uppercase tracking-wider">Zepto-Speed</span>
+              <span className="text-[color:var(--text-soft)] text-xs truncate">⚡ Delivery</span>
+            </div>
+          </Link>
+          
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[color:var(--surface-muted)] border border-[color:var(--border-soft)] rounded-lg">
+            <MapPin size={14} className="text-[color:var(--primary)]" />
+            <span className="text-sm text-[color:var(--text-soft)] truncate max-w-[200px]">42, Green Avenue, Delhi...</span>
           </div>
-        )}
+        </div>
 
-        {/* Admin nav links */}
-        {isAdmin && (
-          <div className="hidden lg:flex items-center gap-5 text-sm font-semibold text-[color:var(--text-soft)]">
-            <Link to={ROUTES.ADMIN.DASHBOARD} className="hover:text-[color:var(--primary)] transition-colors">Dashboard</Link>
-            <Link to={ROUTES.ADMIN.PRODUCTS}  className="hover:text-[color:var(--primary)] transition-colors">Products</Link>
-            <Link to={ROUTES.ADMIN.ORDERS}    className="hover:text-[color:var(--primary)] transition-colors">Orders</Link>
-            <Link to={ROUTES.ADMIN.REPORTS}   className="hover:text-[color:var(--primary)] transition-colors">Reports</Link>
-          </div>
-        )}
-
-        {/* Right side actions */}
-        <div className="flex items-center gap-2">
-          <div className="theme-switch" aria-label="Theme toggle">
-            <button
-              type="button"
-              onClick={() => handleThemeChange("light")}
-              className={`theme-switch-btn ${theme === "light" ? "active" : ""}`}
-              aria-label="Switch to light theme"
-            >
-              <Sun size={14} />
-            </button>
-            <button
-              type="button"
-              onClick={() => handleThemeChange("dark")}
-              className={`theme-switch-btn ${theme === "dark" ? "active" : ""}`}
-              aria-label="Switch to dark theme"
-            >
-              <Moon size={14} />
-            </button>
-          </div>
-
-          {isAuthenticated ? (
-            <>
-              {!isAdmin && (
-                <Link to={ROUTES.CUSTOMER.CART} className="relative p-2 rounded-xl hover:bg-[color:var(--surface-muted)] text-[color:var(--text-soft)] hover:text-[color:var(--primary)] transition-colors">
-                  <ShoppingCart size={20} />
-                  {cartCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-[color:var(--accent)] text-slate-900 text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-extrabold">
-                      {cartCount > 9 ? "9+" : cartCount}
-                    </span>
-                  )}
-                </Link>
-              )}
-              <div className="hidden sm:flex items-center gap-2 text-sm text-[color:var(--text-soft)]">
-                <User size={16} />
-                <span className="font-semibold">{user?.fullName?.split(" ")[0]}</span>
-              </div>
-              <button onClick={handleLogout}
-                className="flex items-center gap-1 text-sm rounded-xl px-2 py-1.5 text-[color:var(--text-soft)] hover:bg-[color:var(--surface-muted)] hover:text-[color:var(--primary)] transition-colors">
-                <LogOut size={16} />
-                <span className="hidden md:inline font-semibold">Logout</span>
-              </button>
-            </>
-          ) : (
-            <Link to={ROUTES.LOGIN}
-              className="btn-primary px-4 py-1.5 rounded-xl text-sm">
-              Login
+        {/* Desktop Main Navigation (Center) */}
+        <div className="hidden md:flex items-center gap-1">
+          <Link to={ROUTES.CUSTOMER.HOME} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${isActive(ROUTES.CUSTOMER.HOME) && location.pathname === ROUTES.CUSTOMER.HOME ? 'bg-[color:var(--primary)]/10 text-[color:var(--primary)]' : 'text-[color:var(--text-soft)] hover:bg-[color:var(--surface-muted)]'}`}>
+            <Home size={18} /> Home
+          </Link>
+          <Link to={ROUTES.CUSTOMER.PRODUCTS} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${isActive(ROUTES.CUSTOMER.PRODUCTS) ? 'bg-[color:var(--primary)]/10 text-[color:var(--primary)]' : 'text-[color:var(--text-soft)] hover:bg-[color:var(--surface-muted)]'}`}>
+            <Store size={18} /> Shop
+          </Link>
+          {isAuthenticated && (
+            <Link to={ROUTES.CUSTOMER.ORDERS} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${isActive(ROUTES.CUSTOMER.ORDERS) ? 'bg-[color:var(--primary)]/10 text-[color:var(--primary)]' : 'text-[color:var(--text-soft)] hover:bg-[color:var(--surface-muted)]'}`}>
+              <ReceiptText size={18} /> Orders
             </Link>
           )}
         </div>
+
+        {/* Right Actions */}
+        <div className="flex items-center gap-2 md:gap-4">
+          
+          {/* Desktop Search (Compact) */}
+          <Link to={ROUTES.CUSTOMER.PRODUCTS} className="hidden md:flex items-center gap-2 px-3 h-10 bg-[color:var(--surface-muted)] border border-[color:var(--border-soft)] rounded-xl text-[color:var(--text-soft)] hover:text-[color:var(--primary)] transition-colors group">
+            <Search size={16} />
+            <span className="text-sm font-medium pr-12">Search...</span>
+            <kbd className="hidden lg:inline-flex items-center gap-1 px-1.5 text-[10px] font-mono bg-[color:var(--surface)] text-[color:var(--text-soft)] rounded border border-[color:var(--border-soft)] shadow-sm">
+              Ctrl K
+            </kbd>
+          </Link>
+
+          {/* Theme Toggle */}
+          <button 
+            onClick={toggleTheme}
+            className="w-10 h-10 rounded-full bg-[color:var(--surface-muted)] border border-[color:var(--border-soft)] flex items-center justify-center text-[color:var(--text-soft)] hover:text-[color:var(--text)] hover:bg-[color:var(--border-soft)] transition-colors active:scale-95"
+            aria-label="Toggle dark mode"
+          >
+            {isDarkMode ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
+
+          {/* Desktop Cart */}
+          <Link 
+            to={ROUTES.CUSTOMER.CART}
+            className={`hidden md:flex relative w-10 h-10 rounded-full bg-[color:var(--surface-muted)] border border-[color:var(--border-soft)] items-center justify-center transition-colors hover:text-[color:var(--primary)] hover:border-[color:var(--primary)]/30 ${isActive(ROUTES.CUSTOMER.CART) ? 'text-[color:var(--primary)]' : 'text-[color:var(--text-soft)]'}`}
+          >
+            <ShoppingCart size={18} />
+            {itemCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 w-[20px] h-[20px] rounded-full text-[10px] font-bold flex items-center justify-center text-white bg-[color:var(--primary)] shadow-sm border-2 border-[color:var(--surface)]">
+                {itemCount > 9 ? "9+" : itemCount}
+              </span>
+            )}
+          </Link>
+
+          {/* User Profile */}
+          <Link 
+            to={isAuthenticated ? ROUTES.CUSTOMER.ORDERS : ROUTES.LOGIN}
+            className="w-10 h-10 rounded-full bg-[color:var(--surface-muted)] border border-[color:var(--border-soft)] flex items-center justify-center text-[color:var(--text-soft)] hover:text-[color:var(--text)] hover:border-[color:var(--primary)]/30 transition-colors active:scale-95 overflow-hidden"
+          >
+            <User size={18} />
+          </Link>
+        </div>
       </div>
+
+      {/* Mobile Global Search Bar (Conditionally expanded to full width) */}
+      <div className={`md:hidden px-4 pb-3 pt-1 transition-all ${isHome ? 'block' : 'hidden'}`}>
+        <Link to={ROUTES.CUSTOMER.PRODUCTS} className="w-full bg-[color:var(--surface-muted)] border border-[color:var(--border-soft)] rounded-xl h-11 flex items-center px-4 shadow-sm hover:shadow-md transition-shadow gap-3 group">
+          <Search size={18} className="text-[color:var(--text-soft)] group-hover:text-[color:var(--primary)] transition-colors" />
+          <div className="flex-1 flex flex-col justify-center">
+            <span className="text-sm font-semibold text-[color:var(--text)] leading-tight">Search for "Apples"</span>
+          </div>
+        </Link>
+      </div>
+      
     </nav>
   );
 };

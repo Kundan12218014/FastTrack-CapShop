@@ -68,39 +68,7 @@ builder.Services
 
         options.Events = new JwtBearerEvents
         {
-            // TEMP DEBUG START: Remove after authentication troubleshooting.
-            OnMessageReceived = context =>
-            {
-                var logger = context.HttpContext.RequestServices
-                    .GetRequiredService<ILoggerFactory>()
-                    .CreateLogger("Admin.JwtDebug");
-
-                var authHeader = context.Request.Headers.Authorization.ToString();
-                var hasAuthHeader = !string.IsNullOrWhiteSpace(authHeader);
-                var hasBearerPrefix = authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
-
-                logger.LogInformation(
-                    "JWT incoming request. Path: {Path}. Authorization header present: {HasAuthHeader}. Bearer scheme used: {HasBearerPrefix}.",
-                    context.Request.Path,
-                    hasAuthHeader,
-                    hasBearerPrefix);
-
-                return Task.CompletedTask;
-            },
-            OnAuthenticationFailed = context =>
-            {
-                var logger = context.HttpContext.RequestServices
-                    .GetRequiredService<ILoggerFactory>()
-                    .CreateLogger("Admin.JwtDebug");
-
-                logger.LogWarning(
-                    context.Exception,
-                    "JWT validation failed for path {Path}. Reason: {Message}",
-                    context.Request.Path,
-                    context.Exception.Message);
-
-                return Task.CompletedTask;
-            },
+            // Normalize custom JWT claims to standard ClaimTypes so [Authorize(Roles="Admin")] works.
             OnTokenValidated = context =>
             {
                 if (context.Principal?.Identity is ClaimsIdentity identity)
@@ -110,9 +78,7 @@ builder.Services
                     {
                         var customRole = identity.FindFirst("role")?.Value;
                         if (!string.IsNullOrWhiteSpace(customRole))
-                        {
                             identity.AddClaim(new Claim(ClaimTypes.Role, customRole));
-                        }
                     }
 
                     var hasNameId = identity.HasClaim(c => c.Type == ClaimTypes.NameIdentifier);
@@ -120,9 +86,7 @@ builder.Services
                     {
                         var customUserId = identity.FindFirst("userId")?.Value;
                         if (!string.IsNullOrWhiteSpace(customUserId))
-                        {
                             identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, customUserId));
-                        }
                     }
                 }
 
@@ -130,16 +94,6 @@ builder.Services
             },
             OnChallenge = async ctx =>
             {
-                var logger = ctx.HttpContext.RequestServices
-                    .GetRequiredService<ILoggerFactory>()
-                    .CreateLogger("Admin.JwtDebug");
-
-                logger.LogWarning(
-                    "JWT challenge triggered. Path: {Path}. Error: {Error}. Description: {ErrorDescription}",
-                    ctx.Request.Path,
-                    ctx.Error,
-                    ctx.ErrorDescription);
-
                 ctx.HandleResponse();
                 ctx.Response.StatusCode = 401;
                 ctx.Response.ContentType = "application/json";
@@ -148,20 +102,11 @@ builder.Services
             },
             OnForbidden = async ctx =>
             {
-                var logger = ctx.HttpContext.RequestServices
-                    .GetRequiredService<ILoggerFactory>()
-                    .CreateLogger("Admin.JwtDebug");
-
-                logger.LogWarning(
-                    "JWT forbidden triggered. Path: {Path}. Authenticated user lacks Admin role.",
-                    ctx.Request.Path);
-
                 ctx.Response.StatusCode = 403;
                 ctx.Response.ContentType = "application/json";
                 await ctx.Response.WriteAsync(
                     """{"success":false,"message":"Admin access required."}""");
             }
-            // TEMP DEBUG END
         };
     });
 

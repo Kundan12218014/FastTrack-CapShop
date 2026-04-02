@@ -1,8 +1,8 @@
-﻿using CapShop.CatalogService.Application.DTOs;
+using CapShop.CatalogService.Application.DTOs;
 using CapShop.CatalogService.Application.Queries;
 using CapShop.Shared.Models;
 using Microsoft.AspNetCore.Mvc;
-using CapShop.CatalogService.Application.Queries;
+
 namespace CapShop.CatalogService.Controllers;
 
 /// <summary>

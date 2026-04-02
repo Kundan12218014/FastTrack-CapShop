@@ -1,4 +1,4 @@
-﻿using CapShop.AuthService.Application.DTOs;
+using CapShop.AuthService.Application.DTOs;
 using CapShop.AuthService.Domain.Interfaces;
 using CapShop.Shared.Exceptions;
 
@@ -27,8 +27,8 @@ public class LoginCommandHandler
         LoginCommand command,
         CancellationToken ct = default)
     {
-        //1.Find user - vague eror prevents email enumberation attacks
-        var user = await _userRepository.GetByEmailAsync(command.Email, ct) ?? throw new UnauthorizedAccessException("Invalid email or passoword");
+        //1. Find user — vague error prevents email enumeration attacks
+        var user = await _userRepository.GetByEmailAsync(command.Email, ct) ?? throw new UnauthorizedException("Invalid email or password.");
         //2.Checks account is active before touching the password
         if (!user.IsActive)
             throw new ForbiddenException("Your account has been deactivated. Please contact support");
@@ -49,7 +49,6 @@ public class LoginCommandHandler
                 await _userRepository.SaveChangesAsync(ct);
                 
                 await _emailService.SendEmailAsync(user.Email, "Your CapShop Login OTP", $"Your one-time password is: <b>{otp}</b>. It is valid for 5 minutes.");
-                Console.WriteLine($"[EMAIL SENT] Sent OTP to {user.Email}");
             }
 
             return new LoginResponseDto

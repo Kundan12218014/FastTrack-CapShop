@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -11,8 +11,8 @@ namespace CapShop.Shared.Models
         public string? Message { get; set; }
         public List<string>? Errors { get; set; }
         public static ApiResponse<T> Ok(T data, string? message = null) => new ApiResponse<T> { Success = true, Data = data, Message = message };
-        public static ApiResponse<T>Fail(string message,List<string>?errors=null)=>new ApiResponse<T>() { Success=false,Message=message,Errors=errors};
-        public static ApiResponse<T> Created(T data, string? message = "Resourse Created Sucessfully.") => new() { Success = true, Data = data, Message = message };
-        public static ApiResponse<T> NoContent(string? message =null) => new() { Success = true, Message = message };
+        public static ApiResponse<T> Fail(string message, List<string>? errors = null) => new ApiResponse<T>() { Success = false, Message = message, Errors = errors };
+        public static ApiResponse<T> Created(T data, string? message = "Resource Created Successfully.") => new() { Success = true, Data = data, Message = message };
+        public static ApiResponse<T> NoContent(string? message = null) => new() { Success = true, Message = message };
     }
 }

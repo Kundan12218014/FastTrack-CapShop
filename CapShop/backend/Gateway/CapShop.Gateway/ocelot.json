@@ -54,7 +54,7 @@
                 "AuthenticationProviderKey": "Bearer",
                 "AllowedScopes": []
             },
-            "RouteId": "Orders-all-proctected"
+            "RouteId": "orders-all-protected"
         },
         {
             "UpstreamPathTemplate": "/gateway/admin/{everything}",

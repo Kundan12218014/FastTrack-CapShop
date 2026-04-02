@@ -90,7 +90,6 @@ public partial class Program
               };
 
           });
-        builder.Services.AddAuthorization();
         builder.Services.AddAuthorization(options =>
         {
             options.FallbackPolicy = new AuthorizationPolicyBuilder()
@@ -176,10 +175,6 @@ public partial class Program
             using var scope = app.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
             await db.Database.MigrateAsync();
-        }
-        if (!app.Environment.IsDevelopment())
-        {
-            app.UseHttpsRedirection();
         }
         app.Run();
     }

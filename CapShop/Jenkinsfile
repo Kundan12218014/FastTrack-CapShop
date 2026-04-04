@@ -1,0 +1,96 @@
+def runCommand(String unixCommand, String windowsCommand = null) {
+    if (isUnix()) {
+        sh unixCommand
+    } else {
+        bat(windowsCommand ?: unixCommand)
+    }
+}
+
+pipeline {
+    agent any
+
+    environment {
+        SQL_SA_PASSWORD = credentials('capshop-sql-sa-password')
+        AUTH_SMTP_EMAIL = credentials('capshop-smtp-email')
+        AUTH_SMTP_PASSWORD = credentials('capshop-smtp-password')
+        AUTH_SMTP_HOST = 'smtp.gmail.com'
+        AUTH_SMTP_PORT = '587'
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Backend Tests') {
+            steps {
+                script {
+                    def testProjects = [
+                        'tests/CapShop.AuthService.Tests/CapShop.AuthService.Tests.csproj',
+                        'tests/CapShop.CatalogService.Tests/CapShop.CatalogService.Tests.csproj',
+                        'tests/CapShop.OrderService.Tests/CapShop.OrderService.Tests.csproj',
+                        'tests/CapShop.AdminService.Tests/CapShop.AdminService.Tests.csproj'
+                    ]
+
+                    for (project in testProjects) {
+                        runCommand("dotnet test ${project} --configuration Release", "dotnet test ${project} --configuration Release")
+                    }
+                }
+            }
+        }
+
+        stage('Frontend Build') {
+            steps {
+                dir('frontend') {
+                    script {
+                        runCommand('npm ci', 'npm ci')
+                        runCommand('npm run build', 'npm run build')
+                    }
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                script {
+                    runCommand('docker compose build', 'docker compose build')
+                }
+            }
+        }
+
+        stage('Smoke Test Stack') {
+            steps {
+                script {
+                    try {
+                        runCommand('docker compose up -d', 'docker compose up -d')
+                        sleep(time: 60, unit: 'SECONDS')
+                        runCommand(
+                            'curl --fail http://localhost:5000/gateway/admin/health',
+                            'powershell -Command "Invoke-WebRequest -UseBasicParsing http://localhost:5000/gateway/admin/health | Select-Object -ExpandProperty StatusCode"'
+                        )
+                    } finally {
+                        runCommand('docker compose down', 'docker compose down')
+                    }
+                }
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    runCommand('docker compose up -d --build', 'docker compose up -d --build')
+                }
+            }
+        }
+    }
+}

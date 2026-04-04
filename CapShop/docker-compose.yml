@@ -1,0 +1,118 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: capshop-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      SA_PASSWORD: ${SQL_SA_PASSWORD:-CapShop123456!}
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+  redis:
+    image: redis:7-alpine
+    container_name: capshop-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: backend/Services/AuthService/CapShop.AuthService/Dockerfile
+    container_name: capshop-auth-service
+    depends_on:
+      - sqlserver
+      - redis
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapShopDB;User Id=sa;Password=${SQL_SA_PASSWORD:-CapShop123456!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
+      ConnectionStrings__Redis: redis:6379
+      EmailSettings__SenderEmail: ${AUTH_SMTP_EMAIL:-change-me@example.com}
+      EmailSettings__SenderPassword: ${AUTH_SMTP_PASSWORD:-change-me}
+      EmailSettings__SmtpHost: ${AUTH_SMTP_HOST:-smtp.gmail.com}
+      EmailSettings__SmtpPort: ${AUTH_SMTP_PORT:-587}
+    ports:
+      - "5001:8080"
+
+  catalog-service:
+    build:
+      context: .
+      dockerfile: backend/Services/CatalogService/CapShop.CatalogService/Dockerfile
+    container_name: capshop-catalog-service
+    depends_on:
+      - sqlserver
+      - redis
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapShopDB;User Id=sa;Password=${SQL_SA_PASSWORD:-CapShop123456!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
+      ConnectionStrings__Redis: redis:6379
+    ports:
+      - "5002:8080"
+
+  order-service:
+    build:
+      context: .
+      dockerfile: backend/Services/OrderService/CapShop.OrderService/Dockerfile
+    container_name: capshop-order-service
+    depends_on:
+      - sqlserver
+      - redis
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapShopDB;User Id=sa;Password=${SQL_SA_PASSWORD:-CapShop123456!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
+      ConnectionStrings__Redis: redis:6379
+    ports:
+      - "5003:8080"
+
+  admin-service:
+    build:
+      context: .
+      dockerfile: backend/Services/AdminService/CapShop.AdminService/Dockerfile
+    container_name: capshop-admin-service
+    depends_on:
+      - sqlserver
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapShopDB;User Id=sa;Password=${SQL_SA_PASSWORD:-CapShop123456!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
+    ports:
+      - "5004:8080"
+
+  gateway:
+    build:
+      context: .
+      dockerfile: backend/Gateway/CapShop.Gateway/Dockerfile
+    container_name: capshop-gateway
+    depends_on:
+      - auth-service
+      - catalog-service
+      - order-service
+      - admin-service
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8080
+    ports:
+      - "5000:8080"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_GATEWAY_URL: /gateway
+    container_name: capshop-frontend
+    depends_on:
+      - gateway
+    ports:
+      - "8080:80"
+
+volumes:
+  sqlserver-data:
+  redis-data:

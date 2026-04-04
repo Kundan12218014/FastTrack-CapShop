@@ -71,11 +71,12 @@ builder.Services.AddControllers();
 // MIDDLEWARE PIPELINE
 // ══════════════════════════════════════════════════════════════════════════
 var app = builder.Build();
+var isContainerEnvironment = app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker");
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<CorrelationIdMiddleware>();
 
-if (app.Environment.IsDevelopment())
+if (isContainerEnvironment)
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
@@ -86,14 +87,14 @@ if (app.Environment.IsDevelopment())
 }
 
 // Skip HTTPS redirect in development — Ocelot talks to us on HTTP
-if (!app.Environment.IsDevelopment())
+if (!isContainerEnvironment)
     app.UseHttpsRedirection();
 
 app.UseCors("GatewayOnly");
 app.MapControllers();
 
 // Auto-apply migrations in Development
-if (app.Environment.IsDevelopment())
+if (isContainerEnvironment)
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();

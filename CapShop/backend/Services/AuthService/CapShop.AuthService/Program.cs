@@ -154,12 +154,13 @@ public partial class Program
         // MIDDLEWARE PIPELINE — ORDER IS CRITICAL
         // ══════════════════════════════════════════════════════════════════════════
         var app = builder.Build();
+        var isContainerEnvironment = app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker");
 
         // Must be FIRST — catches exceptions from all middleware below it
         app.UseMiddleware<GlobalExceptionMiddleware>();
         app.UseMiddleware<CorrelationIdMiddleware>();
 
-        if (app.Environment.IsDevelopment())
+        if (isContainerEnvironment)
         {
             app.UseSwagger();
             app.UseSwaggerUI(c =>
@@ -169,7 +170,10 @@ public partial class Program
             });
         }
 
-        app.UseHttpsRedirection();
+        if (!isContainerEnvironment)
+        {
+            app.UseHttpsRedirection();
+        }
         app.UseCors("GatewayOnly");
         app.UseAuthentication(); // 1. Identify the user
         app.UseAuthorization();  // 2. Check if they have permission
@@ -179,15 +183,11 @@ public partial class Program
         // AUTO-APPLY MIGRATIONS ON STARTUP (Development only)
         // In production, run migrations as a separate CI/CD step — not on startup.
         // ══════════════════════════════════════════════════════════════════════════
-        if (app.Environment.IsDevelopment())
+        if (isContainerEnvironment)
         {
             using var scope = app.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
             await db.Database.MigrateAsync();
-        }
-        if (!app.Environment.IsDevelopment())
-        {
-            app.UseHttpsRedirection();
         }
         app.Run();
     }

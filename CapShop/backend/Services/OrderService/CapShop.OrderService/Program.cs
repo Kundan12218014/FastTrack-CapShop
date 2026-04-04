@@ -149,11 +149,12 @@ builder.Services.AddCors(options =>
 // MIDDLEWARE PIPELINE
 // ══════════════════════════════════════════════════════════════════════════
 var app = builder.Build();
+var isContainerEnvironment = app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker");
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<CorrelationIdMiddleware>();
 
-if (app.Environment.IsDevelopment())
+if (isContainerEnvironment)
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>

@@ -222,11 +222,12 @@ builder.Services.AddControllers();
 // MIDDLEWARE PIPELINE
 // ══════════════════════════════════════════════════════════════════════════
 var app = builder.Build();
+var isContainerEnvironment = app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Docker");
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<CorrelationIdMiddleware>();
 
-if (app.Environment.IsDevelopment())
+if (isContainerEnvironment)
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
@@ -236,7 +237,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-if (!app.Environment.IsDevelopment())
+if (!isContainerEnvironment)
     app.UseHttpsRedirection();
 
 app.UseCors("GatewayOnly");
@@ -266,7 +267,7 @@ app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks
     }
 }).AllowAnonymous();
 
-if (app.Environment.IsDevelopment())
+if (isContainerEnvironment)
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AdminDbContext>();

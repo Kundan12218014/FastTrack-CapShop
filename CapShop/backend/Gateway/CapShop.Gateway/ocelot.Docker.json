@@ -1,0 +1,81 @@
+{
+  "Routes": [
+    {
+      "UpstreamPathTemplate": "/gateway/admin/health",
+      "UpstreamHttpMethod": [ "GET" ],
+      "DownstreamPathTemplate": "/health",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "admin-service",
+          "Port": 8080
+        }
+      ],
+      "RouteId": "admin-health"
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/auth/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "PATCH", "DELETE" ],
+      "DownstreamPathTemplate": "/auth/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "auth-service",
+          "Port": 8080
+        }
+      ],
+      "RouteId": "auth-all"
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/catalog/{everything}",
+      "UpstreamHttpMethod": [ "GET" ],
+      "DownstreamPathTemplate": "/catalog/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "catalog-service",
+          "Port": 8080
+        }
+      ],
+      "RouteId": "catalog-read-public"
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/orders/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "DownstreamPathTemplate": "/orders/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "order-service",
+          "Port": 8080
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      },
+      "RouteId": "orders-all-protected"
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/admin/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "PATCH", "DELETE" ],
+      "DownstreamPathTemplate": "/admin/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "admin-service",
+          "Port": 8080
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer",
+        "AllowedScopes": []
+      },
+      "RouteId": "admin-all-protected"
+    }
+  ],
+  "GlobalConfiguration": {
+    "BaseUrl": "http://gateway:8080",
+    "RequestIdKey": "X-Correlation-Id"
+  }
+}

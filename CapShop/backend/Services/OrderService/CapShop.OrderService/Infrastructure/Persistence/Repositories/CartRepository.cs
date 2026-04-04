@@ -1,32 +1,58 @@
-﻿using CapShop.OrderService.Domain.Entities;
+using System.Text.Json;
+using CapShop.OrderService.Domain.Entities;
 using CapShop.OrderService.Domain.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace CapShop.OrderService.Infrastructure.Persistence.Repositories;
 
 public class CartRepository : ICartRepository
 {
-    private readonly OrderDbContext _context;
+    private readonly IDistributedCache _cache;
+    private const string CartKeyPrefix = "cart:";
 
-    public CartRepository(OrderDbContext context) => _context = context;
+    private static readonly DistributedCacheEntryOptions CartTtl = new()
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7)
+    };
 
-    public async Task<Cart?> GetActiveCartByUserIdAsync(
-        Guid userId, CancellationToken ct = default)
-        => await _context.Orders
-                         .Include(c => c.Items)
-                         .FirstOrDefaultAsync(
-                             c => c.UserId == userId
-                               && c.Status == CartStatus.Active, ct);
+    private static readonly JsonSerializerOptions JsonOpts = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
 
-    public async Task<Cart?> GetByIdAsync(
-        Guid cartId, CancellationToken ct = default)
-        => await _context.Orders
-                         .Include(c => c.Items)
-                         .FirstOrDefaultAsync(c => c.Id == cartId, ct);
+    public CartRepository(IDistributedCache cache) => _cache = cache;
+
+    // ── Read ──────────────────────────────────────────────────────────────
+
+    public async Task<Cart?> GetActiveCartByUserIdAsync(Guid userId, CancellationToken ct = default)
+    {
+        var json = await _cache.GetStringAsync(UserKey(userId), ct);
+        if (string.IsNullOrEmpty(json)) return null;
+
+        var model = JsonSerializer.Deserialize<CartCacheModel>(json, JsonOpts);
+        return model?.Status == CartStatus.Active ? model.ToDomain() : null;
+    }
+
+    public Task<Cart?> GetByIdAsync(Guid cartId, CancellationToken ct = default)
+        // Redis is keyed by userId; callers should use GetActiveCartByUserIdAsync.
+        => Task.FromResult<Cart?>(null);
+
+    // ── Write ─────────────────────────────────────────────────────────────
 
     public async Task AddAsync(Cart cart, CancellationToken ct = default)
-        => await _context.Orders.AddAsync(cart, ct);
+    {
+        var model = CartCacheModel.FromDomain(cart);
+        var json = JsonSerializer.Serialize(model, JsonOpts);
+        await _cache.SetStringAsync(UserKey(cart.UserId), json, CartTtl, ct);
+    }
 
-    public async Task SaveChangesAsync(CancellationToken ct = default)
-        => await _context.SaveChangesAsync(ct);
+    public async Task DeleteAsync(Guid userId, CancellationToken ct = default)
+        => await _cache.RemoveAsync(UserKey(userId), ct);
+
+    // SaveChangesAsync is a no-op — Redis writes are immediate in AddAsync.
+    public Task SaveChangesAsync(CancellationToken ct = default) => Task.CompletedTask;
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    private static string UserKey(Guid userId) => $"{CartKeyPrefix}{userId}";
 }

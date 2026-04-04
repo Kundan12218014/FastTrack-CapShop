@@ -24,7 +24,7 @@ public partial class Program
 
         // Add services to the container.
 
-        //1. Database
+        //1. Database & Caching
         builder.Services.AddDbContext<AuthDbContext>(options =>
         options.UseSqlServer(
             builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -32,6 +32,12 @@ public partial class Program
                 maxRetryCount: 5,
                 maxRetryDelay: TimeSpan.FromSeconds(30),
                 errorNumbersToAdd: null)));
+
+        builder.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+            options.InstanceName = "CapShop.AuthService:";
+        });
         //2.Dependency injection
         //register by interface = never by concreate class
         //scoped = new instance per HTTP request (correct for EF Core)

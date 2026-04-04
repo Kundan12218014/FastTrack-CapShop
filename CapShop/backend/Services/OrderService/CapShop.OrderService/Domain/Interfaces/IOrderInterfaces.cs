@@ -1,4 +1,4 @@
-﻿using CapShop.OrderService.Domain.Entities;
+using CapShop.OrderService.Domain.Entities;
 using CapShop.OrderService.Domain.Enums;
 using CapShop.Shared.Models;
 
@@ -9,6 +9,7 @@ public interface ICartRepository
     Task<Cart?> GetActiveCartByUserIdAsync(Guid userId, CancellationToken ct = default);
     Task<Cart?> GetByIdAsync(Guid cartId, CancellationToken ct = default);
     Task AddAsync(Cart cart, CancellationToken ct = default);
+    Task DeleteAsync(Guid userId, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }
 

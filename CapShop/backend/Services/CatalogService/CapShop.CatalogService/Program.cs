@@ -10,7 +10,8 @@ using Microsoft.OpenApi;
 var builder = WebApplication.CreateBuilder(args);
 
 // ══════════════════════════════════════════════════════════════════════════
-// 1. DATABASE
+// ══════════════════════════════════════════════════════════════════════════
+// 1. DATABASE & CACHING
 // ══════════════════════════════════════════════════════════════════════════
 builder.Services.AddDbContext<CatalogDbContext>(options =>
     options.UseSqlServer(
@@ -19,6 +20,12 @@ builder.Services.AddDbContext<CatalogDbContext>(options =>
             maxRetryCount: 5,
             maxRetryDelay: TimeSpan.FromSeconds(30),
             errorNumbersToAdd: null)));
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+    options.InstanceName = "CapShop.CatalogService:";
+});
 
 // ══════════════════════════════════════════════════════════════════════════
 // 2. DEPENDENCY INJECTION

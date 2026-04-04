@@ -1,4 +1,4 @@
-﻿using CapShop.OrderService.Application.DTOs;
+using CapShop.OrderService.Application.DTOs;
 using CapShop.OrderService.Domain.Entities;
 using CapShop.OrderService.Domain.Enums;
 using CapShop.OrderService.Domain.Interfaces;
@@ -117,10 +117,10 @@ public class PlaceOrderCommandHandler
         // 4. Mark cart as converted — prevents it being modified again
         cart.MarkAsConverted();
 
-        // 5. Persist both in the same transaction
+        // 5. Persist order to SQL, then evict the cart from Redis
         await _orderRepository.AddAsync(order, ct);
         await _orderRepository.SaveChangesAsync(ct);
-        await _cartRepository.SaveChangesAsync(ct);
+        await _cartRepository.DeleteAsync(command.UserId, ct); // Cart fully cleared in Redis
 
         return MapToDto(order);
     }

@@ -1,6 +1,7 @@
 using CapShop.AuthService.Application.DTOs;
 using CapShop.AuthService.Domain.Interfaces;
 using CapShop.Shared.Exceptions;
+using Microsoft.Extensions.Caching.Distributed;
 using OtpNet;
 
 namespace CapShop.AuthService.Application.Commands;
@@ -11,11 +12,16 @@ public class VerifyTwoFactorCommandHandler
 {
     private readonly IUserRepository _userRepository;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
+    private readonly IDistributedCache _cache;
 
-    public VerifyTwoFactorCommandHandler(IUserRepository userRepository, IJwtTokenGenerator jwtTokenGenerator)
+    public VerifyTwoFactorCommandHandler(
+        IUserRepository userRepository,
+        IJwtTokenGenerator jwtTokenGenerator,
+        IDistributedCache cache)
     {
         _userRepository = userRepository;
         _jwtTokenGenerator = jwtTokenGenerator;
+        _cache = cache;
     }
 
     public async Task<LoginResponseDto> Handle(VerifyTwoFactorCommand command, CancellationToken ct = default)
@@ -28,16 +34,17 @@ public class VerifyTwoFactorCommandHandler
 
         if (user.PreferredTwoFactorMethod == "Email")
         {
-            if (string.IsNullOrWhiteSpace(user.CurrentOtp) || user.OtpExpiryTime < DateTime.UtcNow)
+            var otpKey = $"otp:{user.Id}";
+            var storedOtp = await _cache.GetStringAsync(otpKey, ct);
+
+            if (string.IsNullOrWhiteSpace(storedOtp))
                 throw new UnauthorizedException("OTP has expired or is invalid. Please login again.");
 
-            if (user.CurrentOtp != command.Code)
+            if (storedOtp != command.Code)
                 throw new UnauthorizedException("Invalid OTP code.");
 
-            // OTP verified successfully
-            user.ClearOtp();
-            await _userRepository.UpdateAsync(user, ct);
-            await _userRepository.SaveChangesAsync(ct);
+            // OTP verified successfully — evict from Redis immediately
+            await _cache.RemoveAsync(otpKey, ct);
         }
         else if (user.PreferredTwoFactorMethod == "Authenticator")
         {

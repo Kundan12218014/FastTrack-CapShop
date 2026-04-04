@@ -1,4 +1,4 @@
-﻿using CapShop.OrderService.Application.DTOs;
+using CapShop.OrderService.Application.DTOs;
 using CapShop.OrderService.Domain.Entities;
 using CapShop.OrderService.Domain.Interfaces;
 using CapShop.Shared.Exceptions;
@@ -30,9 +30,6 @@ public class AddToCartCommandHandler
         var cart = await _cartRepository.GetActiveCartByUserIdAsync(command.UserId, ct)
                    ?? Cart.Create(command.UserId);
 
-        var isNewCart = cart.Id == Guid.Empty
-                     || !await CartExistsAsync(cart.Id, ct);
-
         var item = cart.AddItem(
             command.ProductId,
             command.ProductName,
@@ -40,10 +37,8 @@ public class AddToCartCommandHandler
             command.Quantity,
             command.AvailableStock);
 
-        if (isNewCart)
-            await _cartRepository.AddAsync(cart, ct);
-
-        await _cartRepository.SaveChangesAsync(ct);
+        // Always upsert — AddAsync handles both new and existing carts in Redis
+        await _cartRepository.AddAsync(cart, ct);
 
         return new CartItemDto
         {
@@ -54,13 +49,6 @@ public class AddToCartCommandHandler
             Quantity = item.Quantity,
             LineTotal = item.LineTotal
         };
-    }
-
-    // Helper — checks if the cart already exists in DB
-    private async Task<bool> CartExistsAsync(Guid cartId, CancellationToken ct)
-    {
-        var existing = await _cartRepository.GetByIdAsync(cartId, ct);
-        return existing != null;
     }
 }
 
@@ -89,7 +77,7 @@ public class UpdateCartItemCommandHandler
             command.NewQuantity,
             command.AvailableStock);
 
-        await _cartRepository.SaveChangesAsync(ct);
+        await _cartRepository.AddAsync(cart, ct);
     }
 }
 
@@ -110,6 +98,6 @@ public class RemoveCartItemCommandHandler
             ?? throw new NotFoundException("Active cart", command.UserId);
 
         cart.RemoveItem(command.CartItemId);
-        await _cartRepository.SaveChangesAsync(ct);
+        await _cartRepository.AddAsync(cart, ct);
     }
 }

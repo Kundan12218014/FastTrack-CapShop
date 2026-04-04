@@ -1,6 +1,7 @@
-﻿using CapShop.AuthService.Application.DTOs;
+using CapShop.AuthService.Application.DTOs;
 using CapShop.AuthService.Domain.Interfaces;
 using CapShop.Shared.Exceptions;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace CapShop.AuthService.Application.Commands;
 public record LoginCommand(string Email, string Password);
@@ -10,18 +11,21 @@ public class LoginCommandHandler
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
     private readonly IEmailService _emailService;
+    private readonly IDistributedCache _cache;
 
     public LoginCommandHandler(
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
         IJwtTokenGenerator jwtTokenGenerator,
-        IEmailService emailService
+        IEmailService emailService,
+        IDistributedCache cache
         )
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
         _jwtTokenGenerator = jwtTokenGenerator;
         _emailService = emailService;
+        _cache = cache;
     }
     public async Task<LoginResponseDto> Handle(
         LoginCommand command,
@@ -42,11 +46,11 @@ public class LoginCommandHandler
         {
             if (user.PreferredTwoFactorMethod == "Email")
             {
-                // Generate a random 6-digit OTP
+                // Generate a random 6-digit OTP and store in Redis with 5-minute TTL
                 var otp = new Random().Next(100000, 999999).ToString();
-                user.SetOtp(otp, 5); // Expiry in 5 minutes
-                await _userRepository.UpdateAsync(user, ct);
-                await _userRepository.SaveChangesAsync(ct);
+                var otpKey = $"otp:{user.Id}";
+                await _cache.SetStringAsync(otpKey, otp,
+                    new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5) });
                 
                 await _emailService.SendEmailAsync(user.Email, "Your CapShop Login OTP", $"Your one-time password is: <b>{otp}</b>. It is valid for 5 minutes.");
                 Console.WriteLine($"[EMAIL SENT] Sent OTP to {user.Email}");

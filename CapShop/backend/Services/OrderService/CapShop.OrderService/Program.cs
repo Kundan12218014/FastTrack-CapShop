@@ -16,12 +16,19 @@ using Microsoft.OpenApi;
 var builder = WebApplication.CreateBuilder(args);
     
 // ══════════════════════════════════════════════════════════════════════════
-// 1. DATABASE
+// ══════════════════════════════════════════════════════════════════════════
+// 1. DATABASE & CACHING
 // ══════════════════════════════════════════════════════════════════════════
 builder.Services.AddDbContext<OrderDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection"),
         sql => sql.EnableRetryOnFailure(5, TimeSpan.FromSeconds(30), null)));
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+    options.InstanceName = "CapShop.OrderService:";
+});
 
 // ══════════════════════════════════════════════════════════════════════════
 // 2. DEPENDENCY INJECTION

@@ -5,6 +5,7 @@ using CapShop.AdminService.Domain.Interfaces;
 using CapShop.AdminService.Infrastructure.Persistence;
 using CapShop.AdminService.Infrastructure.Persistence.Repositories;
 using CapShop.Shared.Middleware;
+using CapShop.Shared.Messaging;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,8 @@ builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 builder.Services.AddScoped<IReportsRepository, ReportsRepository>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<ReportExportService>();
+builder.Services.AddRabbitMqMessaging(builder.Configuration);
+builder.Services.AddHostedService<OrderPlacedConsumer>();
 
 // ══════════════════════════════════════════════════════════════════════════
 // 3. VALIDATION

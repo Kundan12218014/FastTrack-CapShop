@@ -3,7 +3,12 @@ using CapShop.OrderService.Domain.Entities;
 using CapShop.OrderService.Domain.Enums;
 using CapShop.OrderService.Domain.Interfaces;
 using CapShop.OrderService.Domain.ValueObjects;
+using CapShop.Shared.Configuration;
+using CapShop.Shared.Contracts.Orders;
 using CapShop.Shared.Exceptions;
+using CapShop.Shared.Messaging;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace CapShop.OrderService.Application.Commands;
 
@@ -76,13 +81,22 @@ public class PlaceOrderCommandHandler
 {
     private readonly ICartRepository _cartRepository;
     private readonly IOrderRepository _orderRepository;
+    private readonly IMessagePublisher _messagePublisher;
+    private readonly RabbitMqOptions _rabbitMqOptions;
+    private readonly ILogger<PlaceOrderCommandHandler> _logger;
 
     public PlaceOrderCommandHandler(
         ICartRepository cartRepository,
-        IOrderRepository orderRepository)
+        IOrderRepository orderRepository,
+        IMessagePublisher messagePublisher,
+        IOptions<RabbitMqOptions> rabbitMqOptions,
+        ILogger<PlaceOrderCommandHandler> logger)
     {
         _cartRepository = cartRepository;
         _orderRepository = orderRepository;
+        _messagePublisher = messagePublisher;
+        _rabbitMqOptions = rabbitMqOptions.Value;
+        _logger = logger;
     }
 
     public async Task<OrderDto> Handle(
@@ -121,8 +135,36 @@ public class PlaceOrderCommandHandler
         await _orderRepository.AddAsync(order, ct);
         await _orderRepository.SaveChangesAsync(ct);
         await _cartRepository.DeleteAsync(command.UserId, ct); // Cart fully cleared in Redis
+        await PublishOrderPlacedEventAsync(order, ct);
 
         return MapToDto(order);
+    }
+
+    private async Task PublishOrderPlacedEventAsync(Order order, CancellationToken ct)
+    {
+        var integrationEvent = new OrderPlacedIntegrationEvent(
+            order.Id,
+            order.OrderNumber,
+            order.UserId,
+            order.TotalAmount,
+            order.PaymentMethod,
+            order.Items.Sum(item => item.Quantity),
+            order.PlacedAt);
+
+        try
+        {
+            await _messagePublisher.PublishAsync(
+                _rabbitMqOptions.OrderPlacedRoutingKey,
+                integrationEvent,
+                ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Order {OrderId} was saved but its RabbitMQ integration event could not be published.",
+                order.Id);
+        }
     }
 
     internal static OrderDto MapToDto(Order o) => new()

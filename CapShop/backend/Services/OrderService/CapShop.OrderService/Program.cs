@@ -6,6 +6,7 @@ using CapShop.OrderService.Domain.Interfaces;
 using CapShop.OrderService.Infrastructure.Persistence;
 using CapShop.OrderService.Infrastructure.Persistence.Repositories;
 using CapShop.Shared.Middleware;
+using CapShop.Shared.Messaging;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -29,6 +30,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
     options.InstanceName = "CapShop.OrderService:";
 });
+builder.Services.AddRabbitMqMessaging(builder.Configuration);
 
 // ══════════════════════════════════════════════════════════════════════════
 // 2. DEPENDENCY INJECTION

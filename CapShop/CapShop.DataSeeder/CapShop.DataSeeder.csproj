@@ -17,6 +17,9 @@
     <ProjectReference Include="..\backend\Services\AuthService\CapShop.AuthService\CapShop.AuthService.csproj" />
     <ProjectReference Include="..\backend\Services\CatalogService\CapShop.CatalogService\CapShop.CatalogService.csproj" />
     <ProjectReference Include="..\backend\Services\OrderService\CapShop.OrderService\CapShop.OrderService.csproj" />
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

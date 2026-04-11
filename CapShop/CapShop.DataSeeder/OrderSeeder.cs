@@ -35,7 +35,11 @@ namespace CapShop.DataSeeder
 
             CartItem CreateCartItem(string productName, int qty)
             {
-                var prod = products.First(p => p.Name.Contains(productName));
+                var prod = products.FirstOrDefault(p => p.Name.Contains(productName, StringComparison.OrdinalIgnoreCase));
+                if (prod == null)
+                {
+                    throw new Exception($"Product matching '{productName}' not found in database.");
+                }
                 return CartItem.Create(Guid.NewGuid(), prod.Id, prod.Name, prod.Price, qty);
             }
 
@@ -44,7 +48,7 @@ namespace CapShop.DataSeeder
                 new { 
                     UserId = GetUserId("priya.patel"), Status = OrderStatus.Delivered, Payment = "UPI", 
                     City = "Mumbai", State = "MH", Pincode = "400054",
-                    Items = new List<CartItem> { CreateCartItem("Galaxy M34", 1), CreateCartItem("Lakme Sunscreen", 1), CreateCartItem("boAt Earbuds", 1) } 
+                    Items = new List<CartItem> { CreateCartItem("Galaxy M34", 1), CreateCartItem("Lakme", 1), CreateCartItem("boAt", 1) } 
                 },
                 new { 
                     UserId = GetUserId("arjun.mehta"), Status = OrderStatus.Shipped, Payment = "Card", 
@@ -59,12 +63,12 @@ namespace CapShop.DataSeeder
                 new { 
                     UserId = GetUserId("vikram.singh"), Status = OrderStatus.Paid, Payment = "UPI", 
                     City = "Dehradun", State = "UK", Pincode = "248001",
-                    Items = new List<CartItem> { CreateCartItem("ASUS TUF", 1), CreateCartItem("boAt Earbuds", 2), CreateCartItem("Wipro", 1) } 
+                    Items = new List<CartItem> { CreateCartItem("ASUS TUF", 1), CreateCartItem("boAt", 2), CreateCartItem("Wipro", 1) } 
                 },
                 new { 
                     UserId = GetUserId("kavitha.nair"), Status = OrderStatus.Cancelled, Payment = "UPI", 
                     City = "Thiruvananthapuram", State = "KL", Pincode = "695004",
-                    Items = new List<CartItem> { CreateCartItem("Manyavar Kurta", 1), CreateCartItem("Wings of Fire", 2) } 
+                    Items = new List<CartItem> { CreateCartItem("Manyavar", 1), CreateCartItem("Wings of Fire", 2) } 
                 },
                 new { 
                     UserId = GetUserId("rohit.gupta"), Status = OrderStatus.Delivered, Payment = "Card", 

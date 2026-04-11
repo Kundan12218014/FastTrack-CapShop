@@ -16,23 +16,26 @@ namespace CapShop.DataSeeder
             {
                 Console.WriteLine("Loading configuration...");
                 var configuration = new ConfigurationBuilder()
-                    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                    .SetBasePath(System.IO.Directory.GetCurrentDirectory())
                     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                     .Build();
 
-                var connectionString = configuration.GetConnectionString("DefaultConnection");
+                var authConnectionString = configuration.GetConnectionString("AuthConnection");
+                var catalogConnectionString = configuration.GetConnectionString("CatalogConnection");
+                var orderConnectionString = configuration.GetConnectionString("OrderConnection");
+                var adminConnectionString = configuration.GetConnectionString("AdminConnection");
 
                 var authOptions = new DbContextOptionsBuilder<AuthDbContext>()
-                    .UseSqlServer(connectionString)
+                    .UseSqlServer(authConnectionString)
                     .Options;
                 var catalogOptions = new DbContextOptionsBuilder<CatalogDbContext>()
-                    .UseSqlServer(connectionString)
+                    .UseSqlServer(catalogConnectionString)
                     .Options;
                 var orderOptions = new DbContextOptionsBuilder<OrderDbContext>()
-                    .UseSqlServer(connectionString)
+                    .UseSqlServer(orderConnectionString)
                     .Options;
                 var adminOptions = new DbContextOptionsBuilder<AdminDbContext>()
-                    .UseSqlServer(connectionString)
+                    .UseSqlServer(adminConnectionString)
                     .Options;
 
                 using var authContext = new AuthDbContext(authOptions);

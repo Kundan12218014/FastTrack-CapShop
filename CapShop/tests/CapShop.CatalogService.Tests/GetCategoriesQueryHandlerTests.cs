@@ -20,7 +20,8 @@ public class GetCategoriesQueryHandlerTests
     public void Setup()
     {
         _categoryRepositoryMock = new Mock<ICategoryRepository>();
-        _handler = new GetCategoriesQueryHandler(_categoryRepositoryMock.Object);
+        var cacheMock = new Mock<Microsoft.Extensions.Caching.Distributed.IDistributedCache>();
+        _handler = new GetCategoriesQueryHandler(_categoryRepositoryMock.Object, cacheMock.Object);
     }
 
     [Test]

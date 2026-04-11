@@ -27,12 +27,14 @@ namespace CapShop.AuthService.Tests
             _passwordHasherMock = new Mock<IPasswordHasher>();
             _jwtTokenGeneratorMock = new Mock<IJwtTokenGenerator>();
             _emailServiceMock = new Mock<IEmailService>();
+            var cacheMock = new Mock<Microsoft.Extensions.Caching.Distributed.IDistributedCache>();
 
             _handler = new LoginCommandHandler(
                 _userRepositoryMock.Object,
                 _passwordHasherMock.Object,
                 _jwtTokenGeneratorMock.Object,
-                _emailServiceMock.Object);
+                _emailServiceMock.Object,
+                cacheMock.Object);
         }
 
         [Test]

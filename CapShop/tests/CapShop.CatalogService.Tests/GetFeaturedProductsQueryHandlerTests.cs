@@ -21,7 +21,8 @@ public class GetFeaturedProductsQueryHandlerTests
     public void Setup()
     {
         _productRepositoryMock = new Mock<IProductRepository>();
-        _handler = new GetFeaturedProductsQueryHandler(_productRepositoryMock.Object);
+        var cacheMock = new Mock<Microsoft.Extensions.Caching.Distributed.IDistributedCache>();
+        _handler = new GetFeaturedProductsQueryHandler(_productRepositoryMock.Object, cacheMock.Object);
     }
 
     [Test]

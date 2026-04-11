@@ -40,7 +40,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapShopDB;User Id=sa;Password=${SQL_SA_PASSWORD:-CapShop123456!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapShopAuthDB;User Id=sa;Password=${SQL_SA_PASSWORD:-CapShop123456!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
       ConnectionStrings__Redis: redis:6379
       EmailSettings__SenderEmail: ${AUTH_SMTP_EMAIL:-change-me@example.com}
       EmailSettings__SenderPassword: ${AUTH_SMTP_PASSWORD:-change-me}
@@ -61,7 +61,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapShopDB;User Id=sa;Password=${SQL_SA_PASSWORD:-CapShop123456!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapShopCatalogDB;User Id=sa;Password=${SQL_SA_PASSWORD:-CapShop123456!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
       ConnectionStrings__Redis: redis:6379
     ports:
       - "5002:8080"
@@ -77,7 +77,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapShopDB;User Id=sa;Password=${SQL_SA_PASSWORD:-CapShop123456!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapShopOrderDB;User Id=sa;Password=${SQL_SA_PASSWORD:-CapShop123456!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
       ConnectionStrings__Redis: redis:6379
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: 5672
@@ -97,7 +97,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapShopDB;User Id=sa;Password=${SQL_SA_PASSWORD:-CapShop123456!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapShopAdminDB;User Id=sa;Password=${SQL_SA_PASSWORD:-CapShop123456!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: 5672
       RabbitMq__UserName: guest

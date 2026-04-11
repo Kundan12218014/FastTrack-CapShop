@@ -137,9 +137,17 @@ public class PlaceOrderCommandHandlerTests
     {
         _cartRepositoryMock = new Mock<ICartRepository>();
         _orderRepositoryMock = new Mock<IOrderRepository>();
+        
+        var messagePublisherMock = new Mock<CapShop.Shared.Messaging.IMessagePublisher>();
+        var rabbitOptions = Microsoft.Extensions.Options.Options.Create(new CapShop.Shared.Configuration.RabbitMqOptions());
+        var loggerMock = new Mock<Microsoft.Extensions.Logging.ILogger<PlaceOrderCommandHandler>>();
+
         _handler = new PlaceOrderCommandHandler(
             _cartRepositoryMock.Object, 
-            _orderRepositoryMock.Object);
+            _orderRepositoryMock.Object,
+            messagePublisherMock.Object,
+            rabbitOptions,
+            loggerMock.Object);
     }
 
     [Test]
@@ -297,7 +305,16 @@ public class CancelOrderCommandHandlerTests
     public void Setup()
     {
         _orderRepositoryMock = new Mock<IOrderRepository>();
-        _handler = new CancelOrderCommandHandler(_orderRepositoryMock.Object);
+        
+        var messagePublisherMock = new Mock<CapShop.Shared.Messaging.IMessagePublisher>();
+        var rabbitOptions = Microsoft.Extensions.Options.Options.Create(new CapShop.Shared.Configuration.RabbitMqOptions());
+        var loggerMock = new Mock<Microsoft.Extensions.Logging.ILogger<CancelOrderCommandHandler>>();
+
+        _handler = new CancelOrderCommandHandler(
+            _orderRepositoryMock.Object,
+            messagePublisherMock.Object,
+            rabbitOptions,
+            loggerMock.Object);
     }
 
     [Test]

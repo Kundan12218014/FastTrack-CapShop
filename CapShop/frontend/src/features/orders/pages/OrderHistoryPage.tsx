@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Package, Calendar, Clock, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
-import { getMyOrders, getOrderById, type OrderSummaryDto, type OrderDto } from "../../../api/orderApi";
+import { getMyOrders, getOrderById, cancelOrder, type OrderSummaryDto, type OrderDto } from "../../../api/orderApi";
 import { Loader } from "../../../components/shared/Loader";
+import { showToast } from "../../../components/shared/Toast";
 
 const statusColors: Record<string, string> = {
-  "Pending": "bg-amber-100 text-amber-800",
+  "PaymentPending": "bg-amber-100 text-amber-800",
+  "Packed": "bg-indigo-100 text-indigo-800",
   "Paid": "bg-blue-100 text-blue-800",
-  "Processing": "bg-indigo-100 text-indigo-800",
   "Shipped": "bg-purple-100 text-purple-800",
   "Delivered": "bg-green-100 text-green-800",
   "Cancelled": "bg-red-100 text-red-800",
@@ -44,6 +45,23 @@ export const OrderHistoryPage = () => {
       } finally {
         setLoadingDetails(false);
       }
+    }
+  };
+
+  const onCancelOrder = async (orderId: string) => {
+    if (!window.confirm("Are you sure you want to cancel this order?")) return;
+    try {
+      await cancelOrder(orderId, "Cancelled by user");
+      showToast.success("Order cancelled successfully");
+      
+      // Refetch orders list and the expanded detailed order
+      const res = await getMyOrders(1, 100);
+      setOrders(res.items);
+      const updatedDetail = await getOrderById(orderId);
+      setDetailsCache(prev => ({ ...prev, [orderId]: updatedDetail }));
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || "Failed to cancel order";
+      showToast.error(msg);
     }
   };
 
@@ -158,6 +176,16 @@ export const OrderHistoryPage = () => {
                                   </div>
                                )}
                              </div>
+                             
+                             {/* Cancel Button */}
+                             {["Paid", "PaymentPending", "Packed"].includes(details.status) && (
+                               <button
+                                 onClick={() => onCancelOrder(details.id)}
+                                 className="w-full mt-4 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white border border-red-200 hover:border-red-500 py-3 rounded-xl font-bold text-sm transition-all shadow-sm"
+                               >
+                                 Cancel Order
+                               </button>
+                             )}
                           </div>
                         </div>
                       </div>

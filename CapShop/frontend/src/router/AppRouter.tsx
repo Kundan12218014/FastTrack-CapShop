@@ -18,6 +18,7 @@ import { ProductDetailPage }    from "../features/catalog/pages/ProductDetailPag
 import { CartPage }             from "../features/cart/pages/CartPage";
 import { CheckoutPage }         from "../features/checkout/pages/CheckoutPage";
 import { OrderHistoryPage }     from "../features/orders/pages/OrderHistoryPage";
+import { OrderDetailPage }      from "../features/orders/pages/OrderDetailPage";
 import { OrderConfirmationPage } from "../features/orders/pages/OrderConfirmationPage";
 import { SecurityPage }         from "../features/account/pages/SecurityPage";
 
@@ -64,7 +65,7 @@ export const AppRouter = () => (
           <Route path={ROUTES.CUSTOMER.CART}             element={<CartPage />} />
           <Route path={ROUTES.CUSTOMER.CHECKOUT}         element={<CheckoutPage />} />
           <Route path={ROUTES.CUSTOMER.ORDERS}           element={<OrderHistoryPage />} />
-          <Route path={ROUTES.CUSTOMER.ORDER_DETAIL}     element={<OrderHistoryPage />} />
+          <Route path={ROUTES.CUSTOMER.ORDER_DETAIL}     element={<OrderDetailPage />} />
           <Route path={ROUTES.CUSTOMER.ORDER_CONFIRM} element={<OrderConfirmationPage />} />
           <Route path={ROUTES.CUSTOMER.SECURITY}         element={<SecurityPage />} />
         </Route>

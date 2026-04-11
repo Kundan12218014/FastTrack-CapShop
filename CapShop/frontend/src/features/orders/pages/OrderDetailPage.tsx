@@ -3,6 +3,8 @@ import { ArrowLeft } from "lucide-react";
 import { useOrderDetail } from "../hooks/useOrders";
 import { StatusBadge } from "../../../components/shared/StatusBadge";
 import { Loader } from "../../../components/shared/Loader";
+import { cancelOrder } from "../../../api/orderApi";
+import { showToast } from "../../../components/shared/Toast";
 import { formatCurrency, formatDateTime, calculateEta } from "../../../utils/formatUtils";
 import { ROUTES } from "../../../constants/routes";
 
@@ -10,6 +12,20 @@ export const OrderDetailPage = () => {
   const { id }   = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { order, loading } = useOrderDetail(id);
+
+  const onCancelOrder = async () => {
+    if (!order) return;
+    if (!window.confirm("Are you sure you want to cancel this order?")) return;
+    try {
+      await cancelOrder(order.id, "Cancelled by user");
+      showToast.success("Order cancelled successfully");
+      // Force refresh by navigating back and forth, or simply reload page for now.
+      window.location.reload();
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || "Failed to cancel order";
+      showToast.error(msg);
+    }
+  };
 
   if (loading) return <div className="max-w-3xl mx-auto px-4 py-8"><Loader /></div>;
   if (!order)  return null;
@@ -90,6 +106,18 @@ export const OrderDetailPage = () => {
           <span>{formatCurrency(order.totalAmount)}</span>
         </div>
       </div>
+      
+      {/* Cancel Action */}
+      {["Paid", "PaymentPending", "Packed"].includes(order.status) && (
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={onCancelOrder}
+            className="px-6 py-2.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white border border-red-200 hover:border-red-500 rounded-lg font-bold text-sm transition-all shadow-sm"
+          >
+            Cancel Order
+          </button>
+        </div>
+      )}
     </div>
   );
 };

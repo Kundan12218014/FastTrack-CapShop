@@ -196,6 +196,7 @@ public class PlaceOrderCommandHandler
     };
 }
 
+
 // ── Cancel Order ──────────────────────────────────────────────────────────
 
 public record CancelOrderCommand(Guid OrderId, Guid UserId, string Reason);
@@ -203,9 +204,21 @@ public record CancelOrderCommand(Guid OrderId, Guid UserId, string Reason);
 public class CancelOrderCommandHandler
 {
     private readonly IOrderRepository _orderRepository;
+    private readonly IMessagePublisher _messagePublisher;
+    private readonly RabbitMqOptions _rabbitMqOptions;
+    private readonly ILogger<CancelOrderCommandHandler> _logger;
 
-    public CancelOrderCommandHandler(IOrderRepository orderRepository)
-        => _orderRepository = orderRepository;
+    public CancelOrderCommandHandler(
+        IOrderRepository orderRepository,
+        IMessagePublisher messagePublisher,
+        IOptions<RabbitMqOptions> rabbitMqOptions,
+        ILogger<CancelOrderCommandHandler> logger)
+    {
+        _orderRepository = orderRepository;
+        _messagePublisher = messagePublisher;
+        _rabbitMqOptions = rabbitMqOptions.Value;
+        _logger = logger;
+    }
 
     public async Task Handle(CancelOrderCommand command, CancellationToken ct = default)
     {
@@ -220,5 +233,33 @@ public class CancelOrderCommandHandler
         order.UpdateStatus(OrderStatus.Cancelled, command.UserId.ToString(), command.Reason);
 
         await _orderRepository.SaveChangesAsync(ct);
+        await PublishOrderCancelledEventAsync(order, ct);
+    }
+
+    private async Task PublishOrderCancelledEventAsync(Order order, CancellationToken ct)
+    {
+        var items = order.Items.Select(i => new OrderCancelledItem(i.ProductId, i.Quantity)).ToList();
+
+        var integrationEvent = new OrderCancelledIntegrationEvent(
+            order.Id,
+            order.OrderNumber,
+            order.UserId,
+            items,
+            DateTime.UtcNow);
+
+        try
+        {
+            await _messagePublisher.PublishAsync(
+                _rabbitMqOptions.OrderCancelledRoutingKey,
+                integrationEvent,
+                ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Order {OrderId} was cancelled but its RabbitMQ integration event could not be published.",
+                order.Id);
+        }
     }
 }

@@ -9,7 +9,7 @@ import { useCartStore } from "../../../store/cartStore";
 import { showToast } from "../../../components/shared/Toast";
 
 export const useCart = () => {
-  const { setItemCount } = useCartStore();
+  const { setCart: syncCartStore } = useCartStore();
   const [cart, setCart] = useState<CartDto | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -17,9 +17,10 @@ export const useCart = () => {
     try {
       const data = await getCart();
       setCart(data);
-      setItemCount(data.itemCount);
+      syncCartStore(data);
     } catch {
       setCart(null);
+      syncCartStore(null);
     } finally {
       setLoading(false);
     }

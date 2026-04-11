@@ -10,7 +10,7 @@ import { showToast } from "../../../components/shared/Toast";
 export const useProductDetail = (productId: string | undefined) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
-  const { increment: cartIncr } = useCartStore();
+  const { fetchCart } = useCartStore();
 
   const [product, setProduct] = useState<ProductDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +47,7 @@ export const useProductDetail = (productId: string | undefined) => {
         quantity,
         availableStock: product.stockQuantity,
       });
-      cartIncr();
+      await fetchCart();
       showToast.success(`${quantity} item(s) added to cart!`);
     } catch (e: unknown) {
       const msg =

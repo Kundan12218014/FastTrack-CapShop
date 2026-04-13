@@ -22,7 +22,7 @@ public class EmailService : IEmailService
         try
         {
             var emailSettings = _configuration.GetSection("EmailSettings");
-            var senderEmail = emailSettings["SenderEmail"] ?? "kundankumar08950@gmail.com";
+            var senderEmail = emailSettings["SenderEmail"];
             var senderPassword = emailSettings["SenderPassword"];
             var smtpHost = emailSettings["SmtpHost"] ?? "smtp.gmail.com";
             var stringPort = emailSettings["SmtpPort"] ?? "587";

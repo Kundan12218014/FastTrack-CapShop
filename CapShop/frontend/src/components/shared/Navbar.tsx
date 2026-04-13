@@ -7,6 +7,7 @@ import { applyTheme, initTheme, type AppTheme } from "../../utils/theme";
 import { useCartStore } from "../../store/cartStore";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { LocationSelector } from "./LocationSelector";
+import { NotificationBell } from "./NotificationBell";
 
 export const Navbar = () => {
   const { isAuthenticated, role } = useAuthStore();
@@ -105,6 +106,12 @@ export const Navbar = () => {
                     </div>
                   )}
                 </Link>
+              )}
+              
+              {!isAdmin && (
+                <div className="ml-1 sm:ml-3">
+                  <NotificationBell />
+                </div>
               )}
               <div className="ml-2">
                 <ProfileDropdown />

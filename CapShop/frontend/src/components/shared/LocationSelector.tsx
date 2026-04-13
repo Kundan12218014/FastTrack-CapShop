@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Search, Crosshair, Home, Edit2, Trash2, X, Plus } from "lucide-react";
+import apiClient from "../../api/axiosClient";
 
 type Address = {
   id: string;
@@ -13,29 +14,45 @@ export const LocationSelector = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Address state managed in localStorage
-  const [addresses, setAddresses] = useState<Address[]>(() => {
-    const saved = localStorage.getItem("userAddresses");
-    if (saved) return JSON.parse(saved);
-    return [
-      {
-        id: "1",
-        title: "Home",
-        detail: "Kundan Kumar, Near Samshan ghat, Hardaspur, Liquor Shop\nHardaspur, India",
-      }
-    ];
-  });
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [selectedId, setSelectedId] = useState<string>(addresses[0]?.id || "");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  
-  // Edit Form State
-  const [editTitle, setEditTitle] = useState("");
-  const [editDetail, setEditDetail] = useState("");
+  const fetchAddresses = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const res = await apiClient.get('/auth/addresses');
+      if (res.data?.data) setAddresses(res.data.data);
+    } catch (e) {
+      console.error("Failed to load addresses from backend");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem("userAddresses", JSON.stringify(addresses));
+    if (localStorage.getItem("token")) {
+      fetchAddresses();
+    } else {
+      // Fallback or handle unauthenticated state if needed
+      const saved = localStorage.getItem("userAddresses");
+      if (saved) setAddresses(JSON.parse(saved));
+    }
+  }, [fetchAddresses]);
+
+  // Persist to local if not auth, otherwise rely on backend fetch
+  useEffect(() => {
+    if (!localStorage.getItem("token")) {
+      localStorage.setItem("userAddresses", JSON.stringify(addresses));
+    }
   }, [addresses]);
+
+  const [selectedId, setSelectedId] = useState<string>("");
+  
+  useEffect(() => {
+     if(addresses.length && !selectedId) {
+        setSelectedId(addresses[0].id);
+     }
+  }, [addresses, selectedId]);
 
   // Close on outside click
   useEffect(() => {
@@ -60,10 +77,17 @@ export const LocationSelector = () => {
     setIsOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    const next = addresses.filter(a => a.id !== id);
-    setAddresses(next);
-    if (selectedId === id) setSelectedId(next[0]?.id || "");
+  const handleDelete = async (id: string) => {
+    try {
+      if (localStorage.getItem("token")) {
+        await apiClient.delete(`/auth/addresses/${id}`);
+      }
+      const next = addresses.filter(a => a.id !== id);
+      setAddresses(next);
+      if (selectedId === id) setSelectedId(next[0]?.id || "");
+    } catch (e) {
+      console.error("Failed to delete address");
+    }
   };
 
   const startEdit = (address: Address) => {
@@ -78,23 +102,38 @@ export const LocationSelector = () => {
     setEditDetail("");
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editTitle.trim() || !editDetail.trim()) return;
 
-    if (editingId === "new") {
-      const newAddr: Address = {
-        id: Math.random().toString(36).substr(2, 9),
-        title: editTitle,
-        detail: editDetail
-      };
-      setAddresses([...addresses, newAddr]);
-      setSelectedId(newAddr.id);
-    } else {
-      setAddresses(addresses.map(a => 
-        a.id === editingId ? { ...a, title: editTitle, detail: editDetail } : a
-      ));
+    try {
+      if (editingId === "new") {
+        let newAddr: Address;
+        
+        if (localStorage.getItem("token")) {
+          const res = await apiClient.post("/auth/addresses", { title: editTitle, detail: editDetail });
+          newAddr = res.data.data;
+        } else {
+          newAddr = {
+            id: Math.random().toString(36).substr(2, 9),
+            title: editTitle,
+            detail: editDetail
+          };
+        }
+        
+        setAddresses([newAddr, ...addresses]);
+        setSelectedId(newAddr.id);
+      } else {
+        if (localStorage.getItem("token")) {
+          await apiClient.put(`/auth/addresses/${editingId}`, { title: editTitle, detail: editDetail });
+        }
+        setAddresses(addresses.map(a => 
+          a.id === editingId ? { ...a, title: editTitle, detail: editDetail } : a
+        ));
+      }
+      setEditingId(null);
+    } catch (e) {
+      console.error("Failed to save address");
     }
-    setEditingId(null);
   };
 
   const [isLocating, setIsLocating] = useState(false);
@@ -121,14 +160,21 @@ export const LocationSelector = () => {
           const data = await res.json();
           const detectedAddress = data.display_name || `Lat: ${latitude}, Lng: ${longitude}`;
           
-          const newAddr: Address = {
-            id: Math.random().toString(36).substr(2, 9),
+          const newAddrData = {
             title: "Current Location",
             detail: detectedAddress,
           };
           
-          setAddresses((prev) => [newAddr, ...prev]);
-          setSelectedId(newAddr.id);
+          let savedAddr: Address;
+          if (localStorage.getItem("token")) {
+            const res = await apiClient.post("/auth/addresses", newAddrData);
+            savedAddr = res.data.data;
+          } else {
+            savedAddr = { id: Math.random().toString(36).substr(2, 9), ...newAddrData };
+          }
+          
+          setAddresses((prev) => [savedAddr, ...prev]);
+          setSelectedId(savedAddr.id);
           setIsOpen(false);
         } catch (error) {
           console.error("Geocoding error:", error);

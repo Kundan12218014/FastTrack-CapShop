@@ -90,6 +90,29 @@ services:
     ports:
       - "5003:8080"
 
+  notification-service:
+    build:
+      context: .
+      dockerfile: backend/Services/NotificationService/CapShop.NotificationService/Dockerfile
+    container_name: capshop-notification-service
+    depends_on:
+      - sqlserver
+      - rabbitmq
+    environment:
+      ASPNETCORE_ENVIRONMENT: Docker
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapShopNotificationDB;User Id=sa;Password=${SQL_SA_PASSWORD:-CapShop123456!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
+      RabbitMq__HostName: rabbitmq
+      RabbitMq__Port: 5672
+      RabbitMq__UserName: guest
+      RabbitMq__Password: guest
+      EmailSettings__SenderEmail: ${NOTIFICATION_SMTP_EMAIL:-change-me@example.com}
+      EmailSettings__SenderPassword: ${NOTIFICATION_SMTP_PASSWORD:-change-me}
+      EmailSettings__SmtpHost: ${NOTIFICATION_SMTP_HOST:-smtp.gmail.com}
+      EmailSettings__SmtpPort: ${NOTIFICATION_SMTP_PORT:-587}
+    ports:
+      - "5005:8080"
+
   admin-service:
     build:
       context: .
@@ -118,6 +141,7 @@ services:
       - auth-service
       - catalog-service
       - order-service
+      - notification-service
       - admin-service
     environment:
       ASPNETCORE_ENVIRONMENT: Docker

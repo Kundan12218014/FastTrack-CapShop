@@ -22,7 +22,12 @@ export const ProductListingPage = () => {
   const updateParam = (key: string, value: string | undefined) => {
     const next = new URLSearchParams(searchParams);
     if (value) next.set(key, value); else next.delete(key);
-    next.set("page", "1");
+    
+    // Reset to page 1 only if the filter changing is NOT the page itself
+    if (key !== "page") {
+      next.set("page", "1");
+    }
+    
     setSearchParams(next);
   };
 

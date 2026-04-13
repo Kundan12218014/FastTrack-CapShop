@@ -21,6 +21,7 @@ public class Order
     public Guid Id { get; private set; }
     public string OrderNumber { get; private set; } = string.Empty;
     public Guid UserId { get; private set; }
+    public string CustomerEmail { get; private set; } = string.Empty;
     public decimal TotalAmount { get; private set; }
     public OrderStatus Status { get; private set; }
     public ShippingAddress ShippingAddress { get; private set; } = null!;
@@ -41,6 +42,7 @@ public class Order
     // ── Factory ───────────────────────────────────────────────────────────
     public static Order Create(
         Guid userId,
+        string customerEmail,
         ShippingAddress shippingAddress,
         string paymentMethod,
         List<CartItem> cartItems)
@@ -48,11 +50,15 @@ public class Order
         if (cartItems == null || cartItems.Count == 0)
             throw new DomainException("Cannot place an order with an empty cart.");
 
+        if (string.IsNullOrWhiteSpace(customerEmail))
+            throw new DomainException("Customer email is required to place an order.");
+
         var order = new Order
         {
             Id = Guid.NewGuid(),
             OrderNumber = GenerateOrderNumber(),
             UserId = userId,
+            CustomerEmail = customerEmail.Trim(),
             Status = OrderStatus.PaymentPending,
             ShippingAddress = shippingAddress,
             PaymentMethod = paymentMethod,

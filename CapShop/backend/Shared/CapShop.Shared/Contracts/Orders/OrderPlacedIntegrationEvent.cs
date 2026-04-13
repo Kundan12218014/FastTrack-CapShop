@@ -4,6 +4,7 @@ public record OrderPlacedIntegrationEvent(
     Guid OrderId,
     string OrderNumber,
     Guid UserId,
+    string CustomerEmail,
     decimal TotalAmount,
     string PaymentMethod,
     int ItemCount,

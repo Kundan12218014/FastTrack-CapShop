@@ -73,6 +73,7 @@ public class SimulatePaymentCommandHandler
 
 public record PlaceOrderCommand(
     Guid UserId,
+    string CustomerEmail,
     ShippingAddressDto ShippingAddress,
     string PaymentMethod,
     string TransactionId);
@@ -122,6 +123,7 @@ public class PlaceOrderCommandHandler
         // 3. Create order from cart items — snapshots prices at this moment
         var order = Order.Create(
             command.UserId,
+            command.CustomerEmail,
             address,
             command.PaymentMethod,
             cart.Items.ToList());

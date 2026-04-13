@@ -39,6 +39,11 @@ public class OrdersController : ControllerBase
             ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? throw new UnauthorizedAccessException("User ID not found in token."));
 
+    private string CurrentUserEmail =>
+        User.FindFirstValue(ClaimTypes.Email)
+        ?? User.FindFirstValue("email")
+        ?? throw new UnauthorizedAccessException("User email not found in token.");
+
     // POST /orders/payment/simulate
     [HttpPost("payment/simulate")]
     [ProducesResponseType(typeof(ApiResponse<PaymentSimulationResponseDto>), StatusCodes.Status200OK)]
@@ -61,6 +66,7 @@ public class OrdersController : ControllerBase
     {
         var command = new PlaceOrderCommand(
             CurrentUserId,
+            CurrentUserEmail,
             request.ShippingAddress,
             request.PaymentMethod,
             request.TransactionId);

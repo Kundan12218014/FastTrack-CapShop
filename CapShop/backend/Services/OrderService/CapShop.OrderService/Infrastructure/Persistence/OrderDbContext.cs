@@ -82,6 +82,7 @@ public class OrderDbContext : DbContext
             entity.Property(o => o.Id).ValueGeneratedNever();
             entity.Property(o => o.OrderNumber).IsRequired().HasMaxLength(30);
             entity.Property(o => o.UserId).IsRequired();
+            entity.Property(o => o.CustomerEmail).IsRequired().HasMaxLength(255);
             entity.Property(o => o.TotalAmount).IsRequired().HasColumnType("decimal(18,2)");
             entity.Property(o => o.PaymentMethod).IsRequired().HasMaxLength(20);
             entity.Property(o => o.PaymentTransactionId).HasMaxLength(50);

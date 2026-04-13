@@ -169,7 +169,7 @@ public class OrderSagaInventoryReservedConsumer : BackgroundService
 
                     // Publish the final OrderPlaced event for Admin dashboard metrics
                     var placedEvent = new OrderPlacedIntegrationEvent(
-                        order.Id, order.OrderNumber, order.UserId, order.TotalAmount,
+                        order.Id, order.OrderNumber, order.UserId, order.CustomerEmail, order.TotalAmount,
                         order.PaymentMethod, order.Items.Sum(i => i.Quantity), order.PlacedAt);
 
                     await _publisher.PublishAsync(_options.OrderPlacedRoutingKey, placedEvent, stoppingToken);

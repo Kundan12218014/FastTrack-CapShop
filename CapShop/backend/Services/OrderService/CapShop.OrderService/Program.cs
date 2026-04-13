@@ -52,6 +52,10 @@ builder.Services.AddScoped<GetCartQueryHandler>();
 builder.Services.AddScoped<GetMyOrdersQueryHandler>();
 builder.Services.AddScoped<GetOrderByIdQueryHandler>();
 
+// Saga Consumers
+builder.Services.AddHostedService<CapShop.OrderService.Application.Services.OrderSagaPaymentFailedConsumer>();
+builder.Services.AddHostedService<CapShop.OrderService.Application.Services.OrderSagaInventoryReservedConsumer>();
+builder.Services.AddHostedService<CapShop.OrderService.Application.Services.OrderSagaInventoryFailedConsumer>();
 builder.Services.AddControllers();
 
 // ══════════════════════════════════════════════════════════════════════════

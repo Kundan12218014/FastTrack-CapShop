@@ -33,7 +33,8 @@ builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<ReportExportService>();
 builder.Services.AddRabbitMqMessaging(builder.Configuration);
 builder.Services.AddHostedService<OrderPlacedConsumer>();
-
+builder.Services.AddHostedService<PaymentSagaConsumer>();
+builder.Services.AddHostedService<RefundSagaConsumer>();
 // ══════════════════════════════════════════════════════════════════════════
 // 3. VALIDATION
 // ══════════════════════════════════════════════════════════════════════════

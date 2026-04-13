@@ -1,4 +1,4 @@
-﻿using CapShop.OrderService.Domain.Enums;
+using CapShop.OrderService.Domain.Enums;
 using CapShop.OrderService.Domain.ValueObjects;
 using CapShop.Shared.Exceptions;
 
@@ -53,7 +53,7 @@ public class Order
             Id = Guid.NewGuid(),
             OrderNumber = GenerateOrderNumber(),
             UserId = userId,
-            Status = OrderStatus.Paid,
+            Status = OrderStatus.PaymentPending,
             ShippingAddress = shippingAddress,
             PaymentMethod = paymentMethod,
             PlacedAt = DateTime.UtcNow,
@@ -76,7 +76,7 @@ public class Order
 
         // Record the initial status in history
         order._history.Add(OrderStatusHistory.Create(
-            order.Id, null, OrderStatus.Paid, "System", "Order placed successfully."));
+            order.Id, null, OrderStatus.PaymentPending, "System", "Order placed and pending payment."));
 
         return order;
     }

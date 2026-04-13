@@ -135,26 +135,30 @@ public class PlaceOrderCommandHandler
         await _orderRepository.AddAsync(order, ct);
         await _orderRepository.SaveChangesAsync(ct);
         await _cartRepository.DeleteAsync(command.UserId, ct); // Cart fully cleared in Redis
-        await PublishOrderPlacedEventAsync(order, ct);
+        
+        // 6. Start the Saga
+        await PublishCheckoutInitiatedEventAsync(order, ct);
 
         return MapToDto(order);
     }
 
-    private async Task PublishOrderPlacedEventAsync(Order order, CancellationToken ct)
+    private async Task PublishCheckoutInitiatedEventAsync(Order order, CancellationToken ct)
     {
-        var integrationEvent = new OrderPlacedIntegrationEvent(
+        var items = order.Items.Select(i => new OrderCancelledItem(i.ProductId, i.Quantity)).ToList();
+
+        var integrationEvent = new CapShop.Shared.Contracts.Saga.OrderCheckoutInitiatedIntegrationEvent(
             order.Id,
             order.OrderNumber,
             order.UserId,
             order.TotalAmount,
             order.PaymentMethod,
-            order.Items.Sum(item => item.Quantity),
+            items,
             order.PlacedAt);
 
         try
         {
             await _messagePublisher.PublishAsync(
-                _rabbitMqOptions.OrderPlacedRoutingKey,
+                _rabbitMqOptions.SagaOrderCheckoutInitiatedRoutingKey,
                 integrationEvent,
                 ct);
         }

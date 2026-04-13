@@ -42,8 +42,11 @@ builder.Services.AddScoped<GetCategoriesQueryHandler>();
 builder.Services.Configure<CapShop.Shared.Configuration.RabbitMqOptions>(
     builder.Configuration.GetSection(CapShop.Shared.Configuration.RabbitMqOptions.SectionName));
 
+CapShop.Shared.Messaging.ServiceCollectionExtensions.AddRabbitMqMessaging(builder.Services, builder.Configuration);
+
 // Add background workers
 builder.Services.AddHostedService<CapShop.CatalogService.Application.Services.OrderCancelledConsumer>();
+builder.Services.AddHostedService<CapShop.CatalogService.Application.Services.InventoryReservationConsumer>();
 
 // ══════════════════════════════════════════════════════════════════════════
 // 3. SWAGGER

@@ -6,6 +6,8 @@ namespace CapShop.AuthService.Infrastructure.Persistence
     {
         public AuthDbContext(DbContextOptions<AuthDbContext> options) : base(options) { }
         public DbSet<User> Users => Set<User>();
+        public DbSet<Address> Addresses => Set<Address>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -55,7 +57,22 @@ namespace CapShop.AuthService.Infrastructure.Persistence
                 entity.HasIndex(u => u.Role)
                 .HasDatabaseName("IX_Users_Role");
 
-                
+                // Configure Addresses relationship
+                entity.HasMany(u => u.Addresses)
+                    .WithOne(a => a.User)
+                    .HasForeignKey(a => a.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Address>(entity =>
+            {
+                entity.ToTable("Addresses");
+                entity.HasKey(a => a.Id);
+                entity.Property(a => a.Id).ValueGeneratedNever();
+                entity.Property(a => a.Title).IsRequired().HasMaxLength(100);
+                entity.Property(a => a.Detail).IsRequired().HasMaxLength(500);
+                entity.Property(a => a.CreatedAt).IsRequired();
+                entity.Property(a => a.UpdatedAt).IsRequired();
             });
         }
 

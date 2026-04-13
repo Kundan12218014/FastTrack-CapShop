@@ -20,6 +20,8 @@ namespace CapShop.AuthService.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public DateTime UpdatedAt { get; private set; }
 
+        private readonly List<Address> _addresses = new();
+        public IReadOnlyCollection<Address> Addresses => _addresses.AsReadOnly();
 
         private User() { }
         public static User Create(string fullName, string email, string phoneNumber, string passwordHash, string role = UserRoles.Customer)

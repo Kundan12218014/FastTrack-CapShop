@@ -97,16 +97,55 @@ export const LocationSelector = () => {
     setEditingId(null);
   };
 
-  const handleDetectLocation = () => {
-    const detected: Address = {
-      id: Math.random().toString(36).substr(2, 9),
-      title: "Current Location",
-      detail: "Detected GPS Location, Auto-generated City, 100000"
-    };
-    setAddresses([detected, ...addresses]);
-    setSelectedId(detected.id);
-    setIsOpen(false);
+  const [isLocating, setIsLocating] = useState(false);
+
+  const handleDetectLocation = async () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          
+          // Use OpenStreetMap Nominatim API for free reverse geocoding
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+          
+          if (!res.ok) throw new Error("Failed to fetch address");
+          
+          const data = await res.json();
+          const detectedAddress = data.display_name || `Lat: ${latitude}, Lng: ${longitude}`;
+          
+          const newAddr: Address = {
+            id: Math.random().toString(36).substr(2, 9),
+            title: "Current Location",
+            detail: detectedAddress,
+          };
+          
+          setAddresses((prev) => [newAddr, ...prev]);
+          setSelectedId(newAddr.id);
+          setIsOpen(false);
+        } catch (error) {
+          console.error("Geocoding error:", error);
+          alert("Failed to decode your location. Please enter manually.");
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        alert(`Unable to get your location: ${error.message}`);
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
+
 
   const selectedAddressObj = addresses.find(a => a.id === selectedId);
   const displayAddress = selectedAddressObj 
@@ -162,31 +201,50 @@ export const LocationSelector = () => {
               <div className="flex flex-col sm:flex-row bg-white dark:bg-[color:var(--surface)] p-2 rounded-xl shadow-sm border border-[color:var(--border-soft)] mb-8 gap-2 sm:gap-0">
                 <button 
                   onClick={handleDetectLocation}
-                  className="flex-1 bg-[#1aa34a] hover:bg-[#16883e] text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                  disabled={isLocating}
+                  className="flex-1 bg-[#1aa34a] hover:bg-[#16883e] disabled:opacity-75 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
                 >
-                  <Crosshair size={18} />
-                  Detect my location
+                  <Crosshair size={18} className={isLocating ? "animate-spin" : ""} />
+                  {isLocating ? "Detecting..." : "Detect my location"}
                 </button>
                 <div className="flex items-center justify-center px-4 font-bold text-gray-300 hidden sm:flex">
                   OR
                 </div>
-                <div className="flex-[1.5] relative">
+                <div className="flex-[1.5] relative group">
                   <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input 
                     type="text" 
-                    placeholder="search delivery location" 
+                    placeholder="search delivery location e.g., 'Pune'" 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => {
-                      if(e.key === 'Enter' && searchQuery) {
-                        setEditDetail(searchQuery);
-                        setEditTitle("Searched Location");
-                        setEditingId("new");
-                        setSearchQuery("");
+                    onKeyDown={async (e) => {
+                      if(e.key === 'Enter' && searchQuery.trim()) {
+                         e.preventDefault();
+                         try {
+                           const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=1`);
+                           if (!res.ok) throw new Error("Search failed");
+                           const data = await res.json();
+                           
+                           if (data && data.length > 0) {
+                             setEditDetail(data[0].display_name);
+                             setEditTitle(searchQuery);
+                           } else {
+                             setEditDetail(searchQuery);
+                             setEditTitle("Searched Location");
+                           }
+                         } catch(err) {
+                           setEditDetail(searchQuery);
+                           setEditTitle("Searched Location");
+                         }
+                         setEditingId("new");
+                         setSearchQuery("");
                       }
                     }}
                     className="w-full h-full min-h-[48px] pl-10 pr-4 rounded-lg border-2 border-transparent focus:border-[color:var(--primary)]/30 focus:outline-none bg-gray-50/50 dark:bg-[color:var(--bg-elevated)] text-[15px] font-medium"
                   />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] sm:hidden group-focus-within:hidden text-gray-400 font-bold">
+                    ENTER TO SEARCH
+                  </div>
                 </div>
               </div>
             )}

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { Bell } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Bell, Mail, MailWarning, CheckCircle2, AlertCircle } from "lucide-react";
 import apiClient from "../../api/axiosClient";
 
 type Notification = {
@@ -8,6 +8,8 @@ type Notification = {
   message: string;
   isRead: boolean;
   createdAtUtc: string;
+  emailStatus: string;
+  emailFailureReason?: string;
 };
 
 export const NotificationBell = () => {
@@ -96,8 +98,21 @@ export const NotificationBell = () => {
                         <p className="text-[12px] text-gray-600 mt-1 leading-relaxed">
                           {n.message}
                         </p>
-                        <p className="text-[10px] text-gray-400 mt-2 font-medium uppercase tracking-wider">
-                          {new Date(n.createdAtUtc).toLocaleString('en-US', { disableDayEpoch: true, day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}
+                        <p className="text-[10px] text-gray-400 mt-2 font-medium uppercase tracking-wider flex items-center gap-2">
+                          {new Date(n.createdAtUtc).toLocaleString('en-US', { day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' })}
+                          
+                          {/* Email Status for Admin Troubleshooting */}
+                          {n.emailStatus && (
+                            <span className={`inline-flex items-center gap-1 normal-case font-bold px-1.5 py-0.5 rounded ${
+                              n.emailStatus === 'Sent' ? 'bg-blue-50 text-blue-600' : 
+                              n.emailStatus === 'Failed' ? 'bg-red-50 text-red-600' : 
+                              'bg-gray-50 text-gray-600'
+                            }`} title={n.emailFailureReason || 'Email Status'}>
+                              {n.emailStatus === 'Sent' ? <CheckCircle2 size={10} /> : 
+                               n.emailStatus === 'Failed' ? <AlertCircle size={10} /> : <Mail size={10} />}
+                              Email {n.emailStatus}
+                            </span>
+                          )}
                         </p>
                       </div>
                       {!n.isRead && (

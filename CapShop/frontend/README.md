@@ -1,73 +1,51 @@
-# React + TypeScript + Vite
+# CapShop Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Overview
+This React + TypeScript frontend consumes APIs through the gateway (`/gateway`) and includes customer features for addresses and notifications.
 
-Currently, two official plugins are available:
+## Features Added
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### 1. Real Location and Address Management
+Component: `src/components/shared/LocationSelector.tsx`
 
-## React Compiler
+What it supports:
+- Detect current location using browser geolocation.
+- Reverse geocode via OpenStreetMap Nominatim.
+- Search location text via Nominatim.
+- Add, edit, delete, and select addresses.
+- Persist addresses to backend (`/auth/addresses`) for authenticated users.
+- Fallback to local storage for unauthenticated users.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Backend endpoints used:
+- `GET /auth/addresses`
+- `POST /auth/addresses`
+- `PUT /auth/addresses/{id}`
+- `DELETE /auth/addresses/{id}`
 
-## Expanding the ESLint configuration
+### 2. Notification Bell
+Component: `src/components/shared/NotificationBell.tsx`
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+What it supports:
+- Poll notifications every 30 seconds.
+- Show unread count badge in navbar.
+- Mark notification as read.
+- Display email delivery state from NotificationService:
+  - `Email Sent`
+  - `Email Failed`
+  - `Email Pending`
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Backend endpoints used:
+- `GET /notifications`
+- `POST /notifications/{id}/read`
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Run Locally
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```powershell
+cd frontend
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Environment/Runtime Notes
+- The app expects gateway routing at `/gateway` in Docker and local proxy mode.
+- JWT token in local storage is used to determine authenticated behavior for address APIs.

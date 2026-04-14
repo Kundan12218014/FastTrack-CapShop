@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Bell, Mail, MailWarning, CheckCircle2, AlertCircle } from "lucide-react";
+import { Bell, Mail, CheckCircle2, AlertCircle } from "lucide-react";
 import apiClient from "../../api/axiosClient";
 
 type Notification = {

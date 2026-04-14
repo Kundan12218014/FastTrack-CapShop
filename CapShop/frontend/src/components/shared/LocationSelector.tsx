@@ -15,20 +15,16 @@ export const LocationSelector = () => {
   const modalRef = useRef<HTMLDivElement>(null);
 
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDetail, setEditDetail] = useState("");
 
   const fetchAddresses = useCallback(async () => {
     try {
-      setIsLoading(true);
       const res = await apiClient.get('/auth/addresses');
       if (res.data?.data) setAddresses(res.data.data);
     } catch (e) {
       console.error("Failed to load addresses from backend");
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 

@@ -105,6 +105,10 @@ public class GetMyOrdersQueryHandlerTests
     private Mock<IOrderRepository> _orderRepositoryMock;
     private GetMyOrdersQueryHandler _handler;
 
+    // Helper: builds a standard shipping address for tests
+    private static Domain.ValueObjects.ShippingAddress TestAddress() =>
+        new("John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210");
+
     [SetUp]
     public void Setup()
     {
@@ -119,21 +123,12 @@ public class GetMyOrdersQueryHandlerTests
         var userId = Guid.NewGuid();
         var cart1 = Cart.Create(userId);
         cart1.AddItem(Guid.NewGuid(), "Product 1", 100m, 2, 10);
-        
+
         var cart2 = Cart.Create(userId);
         cart2.AddItem(Guid.NewGuid(), "Product 2", 50m, 3, 10);
 
-        var order1 = Order.Create(
-            userId,
-            new Domain.ValueObjects.ShippingAddress("John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210"),
-            PaymentMethod.COD,
-            cart1.Items.ToList());
-
-        var order2 = Order.Create(
-            userId,
-            new Domain.ValueObjects.ShippingAddress("John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210"),
-            PaymentMethod.UPI,
-            cart2.Items.ToList());
+        var order1 = Order.Create(userId, "test@example.com", TestAddress(), "COD", cart1.Items.ToList());
+        var order2 = Order.Create(userId, "test@example.com", TestAddress(), "UPI", cart2.Items.ToList());
 
         var orders = new List<Order> { order1, order2 };
         var pagedResult = new PagedResult<Order>(orders, 2, 1, 10);
@@ -153,7 +148,7 @@ public class GetMyOrdersQueryHandlerTests
         Assert.That(result.Items.Count(), Is.EqualTo(2));
         Assert.That(result.Page, Is.EqualTo(1));
         Assert.That(result.PageSize, Is.EqualTo(10));
-        
+
         var firstOrder = result.Items.First();
         Assert.That(firstOrder.OrderNumber, Is.Not.Empty);
         Assert.That(firstOrder.TotalAmount, Is.GreaterThan(0));
@@ -190,11 +185,7 @@ public class GetMyOrdersQueryHandlerTests
         var cart = Cart.Create(userId);
         cart.AddItem(Guid.NewGuid(), "Product 1", 100m, 2, 10);
 
-        var order = Order.Create(
-            userId,
-            new Domain.ValueObjects.ShippingAddress("John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210"),
-            PaymentMethod.COD,
-            cart.Items.ToList());
+        var order = Order.Create(userId, "test@example.com", TestAddress(), "COD", cart.Items.ToList());
 
         var orders = new List<Order> { order };
         var pagedResult = new PagedResult<Order>(orders, 25, 3, 10); // Page 3 of 25 total items
@@ -212,7 +203,7 @@ public class GetMyOrdersQueryHandlerTests
         Assert.That(result.Page, Is.EqualTo(3));
         Assert.That(result.PageSize, Is.EqualTo(10));
         Assert.That(result.TotalCount, Is.EqualTo(25));
-        
+
         _orderRepositoryMock.Verify(r => r.GetByUserIdAsync(userId, 3, 10, It.IsAny<CancellationToken>()), Times.Once);
     }
 }
@@ -222,6 +213,9 @@ public class GetOrderByIdQueryHandlerTests
 {
     private Mock<IOrderRepository> _orderRepositoryMock;
     private GetOrderByIdQueryHandler _handler;
+
+    private static Domain.ValueObjects.ShippingAddress TestAddress() =>
+        new("John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210");
 
     [SetUp]
     public void Setup()
@@ -239,11 +233,7 @@ public class GetOrderByIdQueryHandlerTests
         var productId = Guid.NewGuid();
         cart.AddItem(productId, "Test Product", 100m, 2, 10);
 
-        var order = Order.Create(
-            userId,
-            new Domain.ValueObjects.ShippingAddress("John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210"),
-            PaymentMethod.COD,
-            cart.Items.ToList());
+        var order = Order.Create(userId, "test@example.com", TestAddress(), "COD", cart.Items.ToList());
 
         var query = new GetOrderByIdQuery(order.Id, userId);
 
@@ -259,8 +249,9 @@ public class GetOrderByIdQueryHandlerTests
         Assert.That(result.Id, Is.EqualTo(order.Id));
         Assert.That(result.OrderNumber, Is.Not.Empty);
         Assert.That(result.TotalAmount, Is.EqualTo(200m));
-        Assert.That(result.Status, Is.EqualTo(OrderStatus.Paid.ToString()));
-        Assert.That(result.PaymentMethod, Is.EqualTo(PaymentMethod.COD));
+        // Saga flow: initial status is PaymentPending
+        Assert.That(result.Status, Is.EqualTo(OrderStatus.PaymentPending.ToString()));
+        Assert.That(result.PaymentMethod, Is.EqualTo("COD"));
         Assert.That(result.Items, Has.Count.EqualTo(1));
         Assert.That(result.Items.First().ProductId, Is.EqualTo(productId));
         Assert.That(result.Items.First().Quantity, Is.EqualTo(2));
@@ -281,7 +272,7 @@ public class GetOrderByIdQueryHandlerTests
             .ReturnsAsync((Order?)null);
 
         // Act & Assert
-        Assert.ThrowsAsync<NotFoundException>(async () => 
+        Assert.ThrowsAsync<NotFoundException>(async () =>
             await _handler.Handle(query));
     }
 
@@ -294,11 +285,7 @@ public class GetOrderByIdQueryHandlerTests
         var cart = Cart.Create(userId);
         cart.AddItem(Guid.NewGuid(), "Test Product", 100m, 2, 10);
 
-        var order = Order.Create(
-            userId,
-            new Domain.ValueObjects.ShippingAddress("John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210"),
-            PaymentMethod.COD,
-            cart.Items.ToList());
+        var order = Order.Create(userId, "test@example.com", TestAddress(), "COD", cart.Items.ToList());
 
         var query = new GetOrderByIdQuery(order.Id, differentUserId);
 
@@ -307,7 +294,7 @@ public class GetOrderByIdQueryHandlerTests
             .ReturnsAsync(order);
 
         // Act & Assert
-        Assert.ThrowsAsync<ForbiddenException>(async () => 
+        Assert.ThrowsAsync<ForbiddenException>(async () =>
             await _handler.Handle(query));
     }
 
@@ -321,11 +308,7 @@ public class GetOrderByIdQueryHandlerTests
         cart.AddItem(Guid.NewGuid(), "Product 2", 50m, 3, 10);
         cart.AddItem(Guid.NewGuid(), "Product 3", 25m, 1, 10);
 
-        var order = Order.Create(
-            userId,
-            new Domain.ValueObjects.ShippingAddress("John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210"),
-            PaymentMethod.UPI,
-            cart.Items.ToList());
+        var order = Order.Create(userId, "test@example.com", TestAddress(), "UPI", cart.Items.ToList());
 
         var query = new GetOrderByIdQuery(order.Id, userId);
 

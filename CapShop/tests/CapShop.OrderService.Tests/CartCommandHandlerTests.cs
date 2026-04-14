@@ -53,7 +53,7 @@ public class AddToCartCommandHandlerTests
         Assert.That(result.LineTotal, Is.EqualTo(200m));
 
         _cartRepositoryMock.Verify(r => r.AddAsync(It.IsAny<Cart>(), It.IsAny<CancellationToken>()), Times.Once);
-        _cartRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        // Note: Redis-backed cart uses AddAsync (upsert) — SaveChangesAsync is not called
     }
 
     [Test]
@@ -88,8 +88,8 @@ public class AddToCartCommandHandlerTests
         Assert.That(result.ProductId, Is.EqualTo(productId));
         Assert.That(result.Quantity, Is.EqualTo(1));
         
-        _cartRepositoryMock.Verify(r => r.AddAsync(It.IsAny<Cart>(), It.IsAny<CancellationToken>()), Times.Never);
-        _cartRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _cartRepositoryMock.Verify(r => r.AddAsync(It.IsAny<Cart>(), It.IsAny<CancellationToken>()), Times.Once);
+        // Note: Redis-backed cart uses AddAsync (upsert) — SaveChangesAsync is not called
     }
 
     [Test]
@@ -153,7 +153,8 @@ public class UpdateCartItemCommandHandlerTests
 
         // Assert
         Assert.That(cart.Items.First().Quantity, Is.EqualTo(5));
-        _cartRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _cartRepositoryMock.Verify(r => r.AddAsync(It.IsAny<Cart>(), It.IsAny<CancellationToken>()), Times.Once);
+        // Note: Redis-backed cart uses AddAsync (upsert) — SaveChangesAsync is not called
     }
 
     [Test]
@@ -234,7 +235,8 @@ public class RemoveCartItemCommandHandlerTests
 
         // Assert
         Assert.That(cart.Items, Is.Empty);
-        _cartRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _cartRepositoryMock.Verify(r => r.AddAsync(It.IsAny<Cart>(), It.IsAny<CancellationToken>()), Times.Once);
+        // Note: Redis-backed cart uses AddAsync (upsert) — SaveChangesAsync is not called
     }
 
     [Test]

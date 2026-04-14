@@ -66,9 +66,9 @@ public class CartEntityTests
         var cart = Cart.Create(Guid.NewGuid());
 
         // Act & Assert
-        var ex = Assert.Throws<DomainException>(() => 
+        var ex = Assert.Throws<DomainException>(() =>
             cart.AddItem(Guid.NewGuid(), "Test Product", 100m, 15, 10));
-        
+
         Assert.That(ex.Message, Does.Contain("stock"));
     }
 
@@ -79,12 +79,12 @@ public class CartEntityTests
         var cart = Cart.Create(Guid.NewGuid());
 
         // Act & Assert
-        var ex1 = Assert.Throws<DomainException>(() => 
+        var ex1 = Assert.Throws<DomainException>(() =>
             cart.AddItem(Guid.NewGuid(), "Test Product", 100m, 0, 10));
-        
-        var ex2 = Assert.Throws<DomainException>(() => 
+
+        var ex2 = Assert.Throws<DomainException>(() =>
             cart.AddItem(Guid.NewGuid(), "Test Product", 100m, -5, 10));
-        
+
         Assert.That(ex1.Message, Does.Contain("Quantity"));
         Assert.That(ex2.Message, Does.Contain("Quantity"));
     }
@@ -112,7 +112,7 @@ public class CartEntityTests
         cart.AddItem(Guid.NewGuid(), "Test Product", 100m, 2, 10);
 
         // Act & Assert
-        Assert.Throws<NotFoundException>(() => 
+        Assert.Throws<NotFoundException>(() =>
             cart.UpdateItemQuantity(Guid.NewGuid(), 5, 10));
     }
 
@@ -139,7 +139,7 @@ public class CartEntityTests
         cart.AddItem(Guid.NewGuid(), "Test Product", 100m, 2, 10);
 
         // Act & Assert
-        Assert.Throws<NotFoundException>(() => 
+        Assert.Throws<NotFoundException>(() =>
             cart.RemoveItem(Guid.NewGuid()));
     }
 
@@ -166,9 +166,9 @@ public class CartEntityTests
         cart.MarkAsConverted();
 
         // Act & Assert
-        var ex = Assert.Throws<DomainException>(() => 
+        var ex = Assert.Throws<DomainException>(() =>
             cart.AddItem(Guid.NewGuid(), "Another Product", 50m, 1, 10));
-        
+
         Assert.That(ex.Message, Does.Contain("no longer active"));
     }
 
@@ -189,6 +189,10 @@ public class CartEntityTests
 [TestFixture]
 public class OrderEntityTests
 {
+    // Helper: builds a standard shipping address for tests
+    private static Domain.ValueObjects.ShippingAddress TestAddress() =>
+        new("John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210");
+
     [Test]
     public void Create_WithValidData_CreatesOrder()
     {
@@ -197,18 +201,16 @@ public class OrderEntityTests
         var cart = Cart.Create(userId);
         cart.AddItem(Guid.NewGuid(), "Test Product", 100m, 2, 10);
 
-        var shippingAddress = new Domain.ValueObjects.ShippingAddress(
-            "John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210");
-
-        // Act
-        var order = Order.Create(userId, shippingAddress, PaymentMethod.COD, cart.Items.ToList());
+        // Act — new signature: (userId, customerEmail, address, paymentMethod string, cartItems)
+        var order = Order.Create(userId, "test@example.com", TestAddress(), "COD", cart.Items.ToList());
 
         // Assert
         Assert.That(order, Is.Not.Null);
         Assert.That(order.Id, Is.Not.EqualTo(Guid.Empty));
         Assert.That(order.OrderNumber, Is.Not.Empty);
         Assert.That(order.UserId, Is.EqualTo(userId));
-        Assert.That(order.Status, Is.EqualTo(OrderStatus.Paid));
+        // Saga flow: initial status is PaymentPending (not Paid)
+        Assert.That(order.Status, Is.EqualTo(OrderStatus.PaymentPending));
         Assert.That(order.TotalAmount, Is.EqualTo(200m));
         Assert.That(order.Items, Has.Count.EqualTo(1));
         Assert.That(order.History, Has.Count.EqualTo(1));
@@ -219,14 +221,27 @@ public class OrderEntityTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var shippingAddress = new Domain.ValueObjects.ShippingAddress(
-            "John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210");
 
         // Act & Assert
-        var ex = Assert.Throws<DomainException>(() => 
-            Order.Create(userId, shippingAddress, PaymentMethod.COD, new List<CartItem>()));
-        
+        var ex = Assert.Throws<DomainException>(() =>
+            Order.Create(userId, "test@example.com", TestAddress(), "COD", new List<CartItem>()));
+
         Assert.That(ex.Message, Does.Contain("empty cart"));
+    }
+
+    [Test]
+    public void Create_WithMissingEmail_ThrowsDomainException()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var cart = Cart.Create(userId);
+        cart.AddItem(Guid.NewGuid(), "Test Product", 100m, 2, 10);
+
+        // Act & Assert
+        var ex = Assert.Throws<DomainException>(() =>
+            Order.Create(userId, "", TestAddress(), "COD", cart.Items.ToList()));
+
+        Assert.That(ex.Message, Does.Contain("email"));
     }
 
     [Test]
@@ -237,18 +252,16 @@ public class OrderEntityTests
         var cart = Cart.Create(userId);
         cart.AddItem(Guid.NewGuid(), "Test Product", 100m, 2, 10);
 
-        var order = Order.Create(
-            userId,
-            new Domain.ValueObjects.ShippingAddress("John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210"),
-            PaymentMethod.COD,
-            cart.Items.ToList());
+        var order = Order.Create(userId, "test@example.com", TestAddress(), "COD", cart.Items.ToList());
+        // Move to Paid first (valid Saga transition)
+        order.UpdateStatus(OrderStatus.Paid, "system", "Payment confirmed");
 
         // Act
         order.UpdateStatus(OrderStatus.Packed, "admin", "Ready to ship");
 
         // Assert
         Assert.That(order.Status, Is.EqualTo(OrderStatus.Packed));
-        Assert.That(order.History, Has.Count.EqualTo(2)); // Initial + Update
+        Assert.That(order.History, Has.Count.EqualTo(3)); // Initial + Paid + Packed
     }
 
     [Test]
@@ -259,16 +272,12 @@ public class OrderEntityTests
         var cart = Cart.Create(userId);
         cart.AddItem(Guid.NewGuid(), "Test Product", 100m, 2, 10);
 
-        var order = Order.Create(
-            userId,
-            new Domain.ValueObjects.ShippingAddress("John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210"),
-            PaymentMethod.COD,
-            cart.Items.ToList());
+        var order = Order.Create(userId, "test@example.com", TestAddress(), "COD", cart.Items.ToList());
 
-        // Act & Assert - Try to go from Paid directly to Delivered
-        var ex = Assert.Throws<DomainException>(() => 
+        // Act & Assert — Try to go from PaymentPending directly to Delivered
+        var ex = Assert.Throws<DomainException>(() =>
             order.UpdateStatus(OrderStatus.Delivered, "admin", "Invalid transition"));
-        
+
         Assert.That(ex.Message, Does.Contain("transition"));
     }
 
@@ -280,20 +289,17 @@ public class OrderEntityTests
         var cart = Cart.Create(userId);
         cart.AddItem(Guid.NewGuid(), "Test Product", 100m, 2, 10);
 
-        var order = Order.Create(
-            userId,
-            new Domain.ValueObjects.ShippingAddress("John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210"),
-            PaymentMethod.COD,
-            cart.Items.ToList());
+        var order = Order.Create(userId, "test@example.com", TestAddress(), "COD", cart.Items.ToList());
 
-        // Act - Valid sequence: Paid → Packed → Shipped → Delivered
+        // Act — Valid full sequence: PaymentPending → Paid → Packed → Shipped → Delivered
+        order.UpdateStatus(OrderStatus.Paid, "system", "Payment confirmed");
         order.UpdateStatus(OrderStatus.Packed, "admin", "Packed");
         order.UpdateStatus(OrderStatus.Shipped, "admin", "Shipped");
         order.UpdateStatus(OrderStatus.Delivered, "admin", "Delivered");
 
         // Assert
         Assert.That(order.Status, Is.EqualTo(OrderStatus.Delivered));
-        Assert.That(order.History, Has.Count.EqualTo(4)); // Initial + 3 updates
+        Assert.That(order.History, Has.Count.EqualTo(5)); // Initial + 4 updates
     }
 
     [Test]
@@ -304,11 +310,7 @@ public class OrderEntityTests
         var cart = Cart.Create(userId);
         cart.AddItem(Guid.NewGuid(), "Test Product", 100m, 2, 10);
 
-        var order = Order.Create(
-            userId,
-            new Domain.ValueObjects.ShippingAddress("John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210"),
-            PaymentMethod.COD,
-            cart.Items.ToList());
+        var order = Order.Create(userId, "test@example.com", TestAddress(), "COD", cart.Items.ToList());
 
         // Act
         order.UpdateStatus(OrderStatus.Cancelled, "customer", "Changed mind");
@@ -325,21 +327,18 @@ public class OrderEntityTests
         var cart = Cart.Create(userId);
         cart.AddItem(Guid.NewGuid(), "Test Product", 100m, 2, 10);
 
-        var order = Order.Create(
-            userId,
-            new Domain.ValueObjects.ShippingAddress("John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210"),
-            PaymentMethod.COD,
-            cart.Items.ToList());
+        var order = Order.Create(userId, "test@example.com", TestAddress(), "COD", cart.Items.ToList());
 
-        // Transition to Delivered
+        // Transition through to Delivered
+        order.UpdateStatus(OrderStatus.Paid, "system", "Paid");
         order.UpdateStatus(OrderStatus.Packed, "admin", "Packed");
         order.UpdateStatus(OrderStatus.Shipped, "admin", "Shipped");
         order.UpdateStatus(OrderStatus.Delivered, "admin", "Delivered");
 
-        // Act & Assert - Cannot change from Delivered
-        var ex = Assert.Throws<DomainException>(() => 
+        // Act & Assert — Cannot change from Delivered
+        var ex = Assert.Throws<DomainException>(() =>
             order.UpdateStatus(OrderStatus.Cancelled, "customer", "Invalid"));
-        
+
         Assert.That(ex.Message, Does.Contain("transition"));
     }
 
@@ -350,16 +349,13 @@ public class OrderEntityTests
         var userId = Guid.NewGuid();
         var cart1 = Cart.Create(userId);
         cart1.AddItem(Guid.NewGuid(), "Product 1", 100m, 1, 10);
-        
+
         var cart2 = Cart.Create(userId);
         cart2.AddItem(Guid.NewGuid(), "Product 2", 50m, 1, 10);
 
-        var shippingAddress = new Domain.ValueObjects.ShippingAddress(
-            "John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210");
-
         // Act
-        var order1 = Order.Create(userId, shippingAddress, PaymentMethod.COD, cart1.Items.ToList());
-        var order2 = Order.Create(userId, shippingAddress, PaymentMethod.UPI, cart2.Items.ToList());
+        var order1 = Order.Create(userId, "test@example.com", TestAddress(), "COD", cart1.Items.ToList());
+        var order2 = Order.Create(userId, "test@example.com", TestAddress(), "UPI", cart2.Items.ToList());
 
         // Assert
         Assert.That(order1.OrderNumber, Is.Not.EqualTo(order2.OrderNumber));
@@ -375,11 +371,8 @@ public class OrderEntityTests
         cart.AddItem(Guid.NewGuid(), "Product 2", 149.50m, 1, 10);
         cart.AddItem(Guid.NewGuid(), "Product 3", 25.00m, 3, 10);
 
-        var shippingAddress = new Domain.ValueObjects.ShippingAddress(
-            "John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210");
-
         // Act
-        var order = Order.Create(userId, shippingAddress, PaymentMethod.COD, cart.Items.ToList());
+        var order = Order.Create(userId, "test@example.com", TestAddress(), "COD", cart.Items.ToList());
 
         // Assert
         Assert.That(order.TotalAmount, Is.EqualTo(424.48m)); // (99.99*2) + 149.50 + (25*3)
@@ -395,9 +388,9 @@ public class ShippingAddressTests
     {
         // Act
         var address = new Domain.ValueObjects.ShippingAddress(
-            "John Doe", 
-            "123 Main St", 
-            "Mumbai", "Maharashtra", "400001", 
+            "John Doe",
+            "123 Main St",
+            "Mumbai", "Maharashtra", "400001",
             "9876543210");
 
         // Assert
@@ -411,10 +404,10 @@ public class ShippingAddressTests
     public void Create_WithInvalidPincode_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => 
+        var ex = Assert.Throws<ArgumentException>(() =>
             new Domain.ValueObjects.ShippingAddress(
                 "John Doe", "123 Main St", "Mumbai", "Maharashtra", "12345", "9876543210"));
-        
+
         Assert.That(ex.Message, Does.Contain("Pincode"));
     }
 
@@ -422,10 +415,10 @@ public class ShippingAddressTests
     public void Create_WithEmptyFullName_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => 
+        var ex = Assert.Throws<ArgumentException>(() =>
             new Domain.ValueObjects.ShippingAddress(
                 "", "123 Main St", "Mumbai", "Maharashtra", "400001", "9876543210"));
-        
+
         Assert.That(ex.Message, Does.Contain("Full name"));
     }
 
@@ -433,10 +426,10 @@ public class ShippingAddressTests
     public void Create_WithEmptyAddressLine_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => 
+        var ex = Assert.Throws<ArgumentException>(() =>
             new Domain.ValueObjects.ShippingAddress(
                 "John Doe", "", "Mumbai", "Maharashtra", "400001", "9876543210"));
-        
+
         Assert.That(ex.Message, Does.Contain("Address"));
     }
 
@@ -444,10 +437,10 @@ public class ShippingAddressTests
     public void Create_WithEmptyPhoneNumber_ThrowsArgumentException()
     {
         // Act & Assert
-        var ex = Assert.Throws<ArgumentException>(() => 
+        var ex = Assert.Throws<ArgumentException>(() =>
             new Domain.ValueObjects.ShippingAddress(
                 "John Doe", "123 Main St", "Mumbai", "Maharashtra", "400001", ""));
-        
+
         Assert.That(ex.Message, Does.Contain("Phone"));
     }
 }
@@ -463,9 +456,9 @@ public class PaymentSimulationTests
 
         // Act
         var simulation = PaymentSimulation.Create(
-            orderId, 
-            PaymentMethod.UPI, 
-            isSuccess: true, 
+            orderId,
+            PaymentMethod.UPI,
+            isSuccess: true,
             failureReason: null);
 
         // Assert
@@ -486,15 +479,15 @@ public class PaymentSimulationTests
 
         // Act
         var simulation = PaymentSimulation.Create(
-            orderId, 
-            PaymentMethod.Card, 
-            isSuccess: false, 
+            orderId,
+            PaymentMethod.Card,
+            isSuccess: false,
             failureReason: failureReason);
 
         // Assert
         Assert.That(simulation, Is.Not.Null);
         Assert.That(simulation.IsSuccess, Is.False);
-        Assert.That(simulation.TransactionId, Is.Not.Empty); // Transaction ID is always generated
+        Assert.That(simulation.TransactionId, Is.Not.Empty);
         Assert.That(simulation.FailureReason, Is.EqualTo(failureReason));
     }
 

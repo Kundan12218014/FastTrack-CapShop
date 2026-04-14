@@ -50,8 +50,10 @@ jobs:
           key:      ${{ secrets.VM_SSH_PRIVATE_KEY }}
           timeout:  15m
           script: |
-            # Run the redeployment script on the Azure VM
-            /opt/redeploy.sh
+            # Fix ownership so the capshop user can write to /opt/capshop
+            sudo chown -R $USER:$USER /opt/capshop 2>/dev/null || true
+            # Run the redeployment script
+            sudo bash /opt/redeploy.sh
 
       - name: Report success
         run: |

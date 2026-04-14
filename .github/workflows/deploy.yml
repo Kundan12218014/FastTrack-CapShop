@@ -31,7 +31,7 @@ jobs:
             --configuration Release --logger "console;verbosity=minimal"
           dotnet test tests/CapShop.AdminService.Tests/CapShop.AdminService.Tests.csproj \
             --configuration Release --logger "console;verbosity=minimal"
-        working-directory: CapShop/backend
+        working-directory: CapShop
 
   # ───────────────────────────────────────────────────────────────────────────
   # JOB 2 — SSH into the Azure VM and run redeploy.sh

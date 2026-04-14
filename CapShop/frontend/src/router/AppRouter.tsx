@@ -3,6 +3,7 @@ import { Toaster } from "react-hot-toast";
 import { ROUTES } from "../constants/routes";
 import { CustomerGuard } from "../guards/CustomerGuard";
 import { AdminGuard }    from "../guards/AdminGuard";
+import { GuestGuard }    from "../guards/GuestGuard";
 import { CustomerLayout } from "../layouts/CustomerLayout";
 import { AdminLayout }    from "../layouts/AdminLayout";
 
@@ -48,10 +49,12 @@ export const AppRouter = () => (
       <Route path="/" element={<Navigate to={ROUTES.CUSTOMER.HOME} replace />} />
 
       {/* Auth (both login + signup use same AuthPage component) */}
-      <Route path="/auth/login"  element={<AuthPage />} />
-      <Route path="/auth/signup" element={<AuthPage />} />
-      <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
-      <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
+      <Route element={<GuestGuard />}>
+        <Route path="/auth/login"  element={<AuthPage />} />
+        <Route path="/auth/signup" element={<AuthPage />} />
+        <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+        <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
+      </Route>
 
       {/* Customer routes */}
       <Route element={<CustomerLayout />}>

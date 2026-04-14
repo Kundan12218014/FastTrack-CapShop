@@ -11,7 +11,10 @@ set -euo pipefail
 
 # APP_DIR points to the subdirectory where docker-compose.yml lives
 APP_DIR="/opt/capshop/CapShop"
-LOG_FILE="/var/log/capshop-deploy.log"
+LOG_FILE="/opt/capshop/redeploy.log"
+
+# Ensure log file exists and is writable
+touch "$LOG_FILE" || true
 
 log() {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"

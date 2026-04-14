@@ -1,4 +1,4 @@
-﻿using CapShop.AdminService.Application.DTOs;
+using CapShop.AdminService.Application.DTOs;
 using CapShop.AdminService.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,8 +45,8 @@ public class AdminProductRepository : IAdminProductRepository
                     c.Name AS CategoryName,
                     p.CreatedAt,
                     p.UpdatedAt
-                FROM catalog.Products p
-                INNER JOIN catalog.Categories c ON c.Id = p.CategoryId
+                FROM CapShopCatalogDB.catalog.Products p
+                INNER JOIN CapShopCatalogDB.catalog.Categories c ON c.Id = p.CategoryId
                 WHERE (@Search = '%%' OR p.Name LIKE @Search OR p.Description LIKE @Search)
                 ORDER BY p.CreatedAt DESC
                 OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
@@ -56,7 +56,7 @@ public class AdminProductRepository : IAdminProductRepository
         var totalCount = await _context.Database
             .SqlQueryRaw<int>($@"
                 SELECT COUNT(*)
-                FROM catalog.Products p
+                FROM CapShopCatalogDB.catalog.Products p
                 WHERE (@Search = '%%' OR p.Name LIKE @Search OR p.Description LIKE @Search)",
                 new Microsoft.Data.SqlClient.SqlParameter("@Search", searchTerm))
             .FirstOrDefaultAsync(ct);
@@ -76,8 +76,8 @@ public class AdminProductRepository : IAdminProductRepository
                     END AS StockStatus,
                     p.ImageUrl, p.IsActive, p.CategoryId,
                     c.Name AS CategoryName, p.CreatedAt, p.UpdatedAt
-                FROM catalog.Products p
-                INNER JOIN catalog.Categories c ON c.Id = p.CategoryId
+                FROM CapShopCatalogDB.catalog.Products p
+                INNER JOIN CapShopCatalogDB.catalog.Categories c ON c.Id = p.CategoryId
                 WHERE p.Id = @Id",
                 new Microsoft.Data.SqlClient.SqlParameter("@Id", id))
             .FirstOrDefaultAsync(ct);
@@ -85,7 +85,7 @@ public class AdminProductRepository : IAdminProductRepository
     public async Task CreateAsync(CreateProductDto dto, CancellationToken ct = default)
     {
         await _context.Database.ExecuteSqlRawAsync(@"
-            INSERT INTO catalog.Products
+            INSERT INTO CapShopCatalogDB.catalog.Products
                 (Id, Name, Description, Price, StockQuantity, CategoryId, ImageUrl, IsActive, CreatedAt, UpdatedAt)
             VALUES
                 (@Id, @Name, @Desc, @Price, @Stock, @CatId, @Img, @Active, @Now, @Now)",
@@ -103,7 +103,7 @@ public class AdminProductRepository : IAdminProductRepository
     public async Task UpdateAsync(Guid id, UpdateProductDto dto, CancellationToken ct = default)
     {
         await _context.Database.ExecuteSqlRawAsync(@"
-            UPDATE catalog.Products
+            UPDATE CapShopCatalogDB.catalog.Products
             SET Name = @Name, Description = @Desc, Price = @Price,
                 CategoryId = @CatId, ImageUrl = @Img, UpdatedAt = @Now
             WHERE Id = @Id",
@@ -119,7 +119,7 @@ public class AdminProductRepository : IAdminProductRepository
     public async Task UpdateStockAsync(Guid id, int quantity, CancellationToken ct = default)
     {
         await _context.Database.ExecuteSqlRawAsync(@"
-            UPDATE catalog.Products
+            UPDATE CapShopCatalogDB.catalog.Products
             SET StockQuantity = @Qty, UpdatedAt = @Now
             WHERE Id = @Id",
             new Microsoft.Data.SqlClient.SqlParameter("@Id", id),
@@ -130,7 +130,7 @@ public class AdminProductRepository : IAdminProductRepository
     public async Task SetActiveAsync(Guid id, bool isActive, CancellationToken ct = default)
     {
         await _context.Database.ExecuteSqlRawAsync(@"
-            UPDATE catalog.Products
+            UPDATE CapShopCatalogDB.catalog.Products
             SET IsActive = @Active, UpdatedAt = @Now
             WHERE Id = @Id",
             new Microsoft.Data.SqlClient.SqlParameter("@Id", id),

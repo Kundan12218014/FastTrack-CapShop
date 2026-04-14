@@ -1,4 +1,4 @@
-﻿using CapShop.AdminService.Application.DTOs;
+using CapShop.AdminService.Application.DTOs;
 using CapShop.AdminService.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,26 +20,26 @@ public class DashboardRepository : IDashboardRepository
             .SqlQueryRaw<DashboardSummaryRaw>(@"
                 SELECT
                     (SELECT ISNULL(SUM(TotalAmount), 0)
-                     FROM orders.Orders WHERE Status = 'Delivered') AS TotalRevenue,
+                     FROM CapShopOrderDB.orders.Orders WHERE Status = 'Delivered') AS TotalRevenue,
 
-                    (SELECT COUNT(*) FROM orders.Orders) AS TotalOrders,
+                    (SELECT COUNT(*) FROM CapShopOrderDB.orders.Orders) AS TotalOrders,
 
-                    (SELECT COUNT(*) FROM auth.Users WHERE Role = 'Customer') AS TotalCustomers,
+                    (SELECT COUNT(*) FROM CapShopAuthDB.auth.Users WHERE Role = 'Customer') AS TotalCustomers,
 
-                    (SELECT COUNT(*) FROM orders.Orders
+                    (SELECT COUNT(*) FROM CapShopOrderDB.orders.Orders
                      WHERE Status IN ('Paid', 'Packed', 'Shipped')) AS PendingOrders,
 
-                    (SELECT COUNT(*) FROM catalog.Products WHERE IsActive = 1) AS TotalProducts,
+                    (SELECT COUNT(*) FROM CapShopCatalogDB.catalog.Products WHERE IsActive = 1) AS TotalProducts,
 
-                    (SELECT COUNT(*) FROM catalog.Products
+                    (SELECT COUNT(*) FROM CapShopCatalogDB.catalog.Products
                      WHERE IsActive = 1 AND StockQuantity <= 5) AS LowStockProducts,
 
                     (SELECT ISNULL(SUM(TotalAmount), 0)
-                     FROM orders.Orders
+                     FROM CapShopOrderDB.orders.Orders
                      WHERE Status = 'Delivered'
                        AND CAST(PlacedAt AS DATE) = CAST(GETUTCDATE() AS DATE)) AS RevenueToday,
 
-                    (SELECT COUNT(*) FROM orders.Orders
+                    (SELECT COUNT(*) FROM CapShopOrderDB.orders.Orders
                      WHERE CAST(PlacedAt AS DATE) = CAST(GETUTCDATE() AS DATE)) AS OrdersToday")
             .FirstOrDefaultAsync(ct) ?? new DashboardSummaryRaw();
 
@@ -49,8 +49,8 @@ public class DashboardRepository : IDashboardRepository
                     o.Id, o.OrderNumber,
                     ISNULL(u.Email, 'Unknown') AS CustomerEmail,
                     o.TotalAmount, o.Status, o.PlacedAt
-                FROM orders.Orders o
-                LEFT JOIN auth.Users u ON u.Id = o.UserId
+                FROM CapShopOrderDB.orders.Orders o
+                LEFT JOIN CapShopAuthDB.auth.Users u ON u.Id = o.UserId
                 ORDER BY o.PlacedAt DESC")
             .ToListAsync(ct);
 

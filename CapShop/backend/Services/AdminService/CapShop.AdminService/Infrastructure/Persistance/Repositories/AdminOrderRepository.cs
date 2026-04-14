@@ -1,4 +1,4 @@
-﻿using CapShop.AdminService.Application.DTOs;
+using CapShop.AdminService.Application.DTOs;
 using CapShop.AdminService.Domain.Interfaces;
 using CapShop.Shared.Exceptions;
 using Microsoft.EntityFrameworkCore;
@@ -32,9 +32,9 @@ public class AdminOrderRepository : IAdminOrderRepository
                     o.PaymentMethod,
                     o.PlacedAt,
                     COUNT(oi.Id) AS ItemCount
-                FROM orders.Orders o
-                LEFT JOIN auth.Users u ON u.Id = o.UserId
-                LEFT JOIN orders.OrderItems oi ON oi.OrderId = o.Id
+                FROM CapShopOrderDB.orders.Orders o
+                LEFT JOIN CapShopAuthDB.auth.Users u ON u.Id = o.UserId
+                LEFT JOIN CapShopOrderDB.orders.OrderItems oi ON oi.OrderId = o.Id
                 WHERE
                     (@Status = '' OR o.Status = @Status)
                     AND (@Search = '%%' OR o.OrderNumber LIKE @Search OR u.Email LIKE @Search)
@@ -50,8 +50,8 @@ public class AdminOrderRepository : IAdminOrderRepository
         var totalCount = await _context.Database
             .SqlQueryRaw<int>(@"
                 SELECT COUNT(DISTINCT o.Id)
-                FROM orders.Orders o
-                LEFT JOIN auth.Users u ON u.Id = o.UserId
+                FROM CapShopOrderDB.orders.Orders o
+                LEFT JOIN CapShopAuthDB.auth.Users u ON u.Id = o.UserId
                 WHERE (@Status = '' OR o.Status = @Status)
                   AND (@Search = '%%' OR o.OrderNumber LIKE @Search OR u.Email LIKE @Search)",
                 new Microsoft.Data.SqlClient.SqlParameter("@Status", statusTerm),
@@ -74,8 +74,8 @@ public class AdminOrderRepository : IAdminOrderRepository
                     o.PlacedAt,
                     o.ShipFullName, o.ShipAddressLine,
                     o.ShipCity, o.ShipState, o.ShipPincode
-                FROM orders.Orders o
-                LEFT JOIN auth.Users u ON u.Id = o.UserId
+                FROM CapShopOrderDB.orders.Orders o
+                LEFT JOIN CapShopAuthDB.auth.Users u ON u.Id = o.UserId
                 WHERE o.Id = @Id",
                 new Microsoft.Data.SqlClient.SqlParameter("@Id", id))
             .FirstOrDefaultAsync(ct);
@@ -87,7 +87,7 @@ public class AdminOrderRepository : IAdminOrderRepository
             .SqlQueryRaw<AdminOrderItemDto>(@"
                 SELECT ProductId, ProductName, Quantity, UnitPrice,
                        CAST(Quantity * UnitPrice AS decimal(18,2)) AS LineTotal
-                FROM orders.OrderItems
+                FROM CapShopOrderDB.orders.OrderItems
                 WHERE OrderId = @OrderId",
                 new Microsoft.Data.SqlClient.SqlParameter("@OrderId", id))
             .ToListAsync(ct);
@@ -96,7 +96,7 @@ public class AdminOrderRepository : IAdminOrderRepository
         order.History = await _context.Database
             .SqlQueryRaw<StatusHistoryDto>(@"
                 SELECT FromStatus, ToStatus, ChangedBy, Remarks, ChangedAt
-                FROM orders.OrderStatusHistory
+                FROM CapShopOrderDB.orders.OrderStatusHistory
                 WHERE OrderId = @OrderId
                 ORDER BY ChangedAt ASC",
                 new Microsoft.Data.SqlClient.SqlParameter("@OrderId", id))
@@ -110,7 +110,7 @@ public class AdminOrderRepository : IAdminOrderRepository
     {
         // Validate allowed transitions
         var currentStatusResult = await _context.Database
-            .SqlQueryRaw<string>("SELECT Status FROM orders.Orders WHERE Id = @Id",
+            .SqlQueryRaw<string>("SELECT Status FROM CapShopOrderDB.orders.Orders WHERE Id = @Id",
                 new Microsoft.Data.SqlClient.SqlParameter("@Id", id))
             .FirstOrDefaultAsync(ct);
 
@@ -133,7 +133,7 @@ public class AdminOrderRepository : IAdminOrderRepository
 
         // Update status in orders schema
         await _context.Database.ExecuteSqlRawAsync(@"
-            UPDATE orders.Orders
+            UPDATE CapShopOrderDB.orders.Orders
             SET Status = @NewStatus, UpdatedAt = @Now
             WHERE Id = @Id",
             new Microsoft.Data.SqlClient.SqlParameter("@Id", id),
@@ -142,7 +142,7 @@ public class AdminOrderRepository : IAdminOrderRepository
 
         // Append to status history
         await _context.Database.ExecuteSqlRawAsync(@"
-            INSERT INTO orders.OrderStatusHistory
+            INSERT INTO CapShopOrderDB.orders.OrderStatusHistory
                 (Id, OrderId, FromStatus, ToStatus, ChangedBy, Remarks, ChangedAt)
             VALUES (@Id, @OrderId, @From, @To, @By, NULL, @Now)",
             new Microsoft.Data.SqlClient.SqlParameter("@Id", Guid.NewGuid()),

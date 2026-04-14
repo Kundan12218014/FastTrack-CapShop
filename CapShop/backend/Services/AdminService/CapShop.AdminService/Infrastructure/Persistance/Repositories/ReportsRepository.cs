@@ -1,4 +1,4 @@
-﻿using CapShop.AdminService.Application.DTOs;
+using CapShop.AdminService.Application.DTOs;
 using CapShop.AdminService.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,7 +20,7 @@ public class ReportsRepository : IReportsRepository
                     CAST(PlacedAt AS DATE) AS Date,
                     ISNULL(SUM(TotalAmount), 0) AS Revenue,
                     COUNT(*) AS Orders
-                FROM orders.Orders
+                FROM CapShopOrderDB.orders.Orders
                 WHERE Status IN ('Paid','Packed','Shipped','Delivered')
                   AND PlacedAt >= @From AND PlacedAt <= @To
                 GROUP BY CAST(PlacedAt AS DATE)
@@ -50,7 +50,7 @@ public class ReportsRepository : IReportsRepository
         var breakdown = await _context.Database
             .SqlQueryRaw<StatusCountRaw>(@"
                 SELECT Status, COUNT(*) AS Count
-                FROM orders.Orders
+                FROM CapShopOrderDB.orders.Orders
                 GROUP BY Status")
             .ToListAsync(ct);
 

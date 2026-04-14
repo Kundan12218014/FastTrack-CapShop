@@ -103,7 +103,7 @@ write_files:
       alias capshop-redeploy='/opt/redeploy.sh'
     permissions: '0644'
 
-# Enable the systemd service so Docker Compose auto-starts on reboot
-runcmd:
+  # ── 8. Enable the systemd service so Docker Compose auto-starts on reboot ──
   - systemctl daemon-reload
   - systemctl enable capshop.service
+  - systemctl start capshop.service

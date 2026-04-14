@@ -101,10 +101,20 @@ namespace CapShop.DataSeeder
 
             foreach (var od in ordersData)
             {
+                var user = users.First(u => u.Id == od.UserId);
                 var address = new ShippingAddress("Seed User", "123 Seed Street", od.City, od.State, od.Pincode, "9999999999");
-                var order = Order.Create(od.UserId, address, od.Payment, od.Items);
+                
+                // New signature: (userId, customerEmail, address, paymentMethod, items)
+                var order = Order.Create(od.UserId, user.Email, address, od.Payment, od.Items);
                 
                 string adminId = admin.Id.ToString();
+
+                // The seeder expects the order to move to the desired status
+                // Order.Create starts at PaymentPending now.
+                if (od.Status == OrderStatus.Paid || od.Status == OrderStatus.Packed || od.Status == OrderStatus.Shipped || od.Status == OrderStatus.Delivered)
+                {
+                    order.UpdateStatus(OrderStatus.Paid, "system", "Payment confirmed during seeding");
+                }
 
                 if (od.Status == OrderStatus.Delivered)
                 {

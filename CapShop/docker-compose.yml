@@ -10,6 +10,12 @@ services:
       - "1433:1433"
     volumes:
       - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${SQL_SA_PASSWORD:-ChangeMe_SQL_Password_123!}\" -Q 'SELECT 1' -No -C || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
@@ -18,6 +24,11 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -27,6 +38,12 @@ services:
       - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 20s
 
   auth-service:
     build:
@@ -34,9 +51,12 @@ services:
       dockerfile: backend/Services/AuthService/CapShop.AuthService/Dockerfile
     container_name: capshop-auth-service
     depends_on:
-      - sqlserver
-      - redis
-      - rabbitmq
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       ASPNETCORE_URLS: http://+:8080
@@ -48,6 +68,7 @@ services:
       EmailSettings__SmtpPort: ${AUTH_SMTP_PORT:-587}
     ports:
       - "5001:8080"
+    restart: on-failure
 
   catalog-service:
     build:
@@ -55,9 +76,12 @@ services:
       dockerfile: backend/Services/CatalogService/CapShop.CatalogService/Dockerfile
     container_name: capshop-catalog-service
     depends_on:
-      - sqlserver
-      - redis
-      - rabbitmq
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       ASPNETCORE_URLS: http://+:8080
@@ -69,6 +93,7 @@ services:
       RabbitMq__Password: guest
     ports:
       - "5002:8080"
+    restart: on-failure
 
   order-service:
     build:
@@ -76,8 +101,10 @@ services:
       dockerfile: backend/Services/OrderService/CapShop.OrderService/Dockerfile
     container_name: capshop-order-service
     depends_on:
-      - sqlserver
-      - redis
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       ASPNETCORE_URLS: http://+:8080
@@ -89,6 +116,7 @@ services:
       RabbitMq__Password: guest
     ports:
       - "5003:8080"
+    restart: on-failure
 
   notification-service:
     build:
@@ -96,8 +124,10 @@ services:
       dockerfile: backend/Services/NotificationService/CapShop.NotificationService/Dockerfile
     container_name: capshop-notification-service
     depends_on:
-      - sqlserver
-      - rabbitmq
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       ASPNETCORE_URLS: http://+:8080
@@ -112,6 +142,7 @@ services:
       EmailSettings__SmtpPort: ${NOTIFICATION_SMTP_PORT:-587}
     ports:
       - "5005:8080"
+    restart: on-failure
 
   admin-service:
     build:
@@ -119,8 +150,10 @@ services:
       dockerfile: backend/Services/AdminService/CapShop.AdminService/Dockerfile
     container_name: capshop-admin-service
     depends_on:
-      - sqlserver
-      - rabbitmq
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       ASPNETCORE_URLS: http://+:8080
@@ -131,6 +164,31 @@ services:
       RabbitMq__Password: guest
     ports:
       - "5004:8080"
+    restart: on-failure
+
+  # ── Data Seeder (runs once, then exits) ──────────────────────────────────────
+  dataseeder:
+    build:
+      context: .
+      dockerfile: CapShop.DataSeeder/Dockerfile
+    container_name: capshop-dataseeder
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      catalog-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      admin-service:
+        condition: service_started
+    environment:
+      ConnectionStrings__AuthConnection: Server=sqlserver,1433;Database=CapShopAuthDB;User Id=sa;Password=${SQL_SA_PASSWORD:-ChangeMe_SQL_Password_123!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
+      ConnectionStrings__CatalogConnection: Server=sqlserver,1433;Database=CapShopCatalogDB;User Id=sa;Password=${SQL_SA_PASSWORD:-ChangeMe_SQL_Password_123!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
+      ConnectionStrings__OrderConnection: Server=sqlserver,1433;Database=CapShopOrderDB;User Id=sa;Password=${SQL_SA_PASSWORD:-ChangeMe_SQL_Password_123!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
+      ConnectionStrings__AdminConnection: Server=sqlserver,1433;Database=CapShopAdminDB;User Id=sa;Password=${SQL_SA_PASSWORD:-ChangeMe_SQL_Password_123!};TrustServerCertificate=True;Encrypt=False;MultipleActiveResultSets=true
+    restart: "no"
 
   gateway:
     build:
@@ -138,16 +196,22 @@ services:
       dockerfile: backend/Gateway/CapShop.Gateway/Dockerfile
     container_name: capshop-gateway
     depends_on:
-      - auth-service
-      - catalog-service
-      - order-service
-      - notification-service
-      - admin-service
+      auth-service:
+        condition: service_started
+      catalog-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      admin-service:
+        condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Docker
       ASPNETCORE_URLS: http://+:8080
     ports:
       - "5000:8080"
+    restart: on-failure
 
   frontend:
     build:
@@ -160,6 +224,7 @@ services:
       - gateway
     ports:
       - "8080:80"
+    restart: on-failure
 
 volumes:
   sqlserver-data:

@@ -18,36 +18,37 @@ namespace CapShop.DataSeeder
                 var configuration = new ConfigurationBuilder()
                     .SetBasePath(System.IO.Directory.GetCurrentDirectory())
                     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                    .AddEnvironmentVariables()   // ← Docker overrides from docker-compose
                     .Build();
 
-                var authConnectionString = configuration.GetConnectionString("AuthConnection");
+                var authConnectionString    = configuration.GetConnectionString("AuthConnection");
                 var catalogConnectionString = configuration.GetConnectionString("CatalogConnection");
-                var orderConnectionString = configuration.GetConnectionString("OrderConnection");
-                var adminConnectionString = configuration.GetConnectionString("AdminConnection");
+                var orderConnectionString   = configuration.GetConnectionString("OrderConnection");
+                var adminConnectionString   = configuration.GetConnectionString("AdminConnection");
+
+                Console.WriteLine("Connecting to databases...");
 
                 var authOptions = new DbContextOptionsBuilder<AuthDbContext>()
-                    .UseSqlServer(authConnectionString)
-                    .Options;
+                    .UseSqlServer(authConnectionString).Options;
                 var catalogOptions = new DbContextOptionsBuilder<CatalogDbContext>()
-                    .UseSqlServer(catalogConnectionString)
-                    .Options;
+                    .UseSqlServer(catalogConnectionString).Options;
                 var orderOptions = new DbContextOptionsBuilder<OrderDbContext>()
-                    .UseSqlServer(orderConnectionString)
-                    .Options;
+                    .UseSqlServer(orderConnectionString).Options;
                 var adminOptions = new DbContextOptionsBuilder<AdminDbContext>()
-                    .UseSqlServer(adminConnectionString)
-                    .Options;
+                    .UseSqlServer(adminConnectionString).Options;
 
-                using var authContext = new AuthDbContext(authOptions);
+                using var authContext    = new AuthDbContext(authOptions);
                 using var catalogContext = new CatalogDbContext(catalogOptions);
-                using var orderContext = new OrderDbContext(orderOptions);
-                using var adminContext = new AdminDbContext(adminOptions);
+                using var orderContext   = new OrderDbContext(orderOptions);
+                using var adminContext   = new AdminDbContext(adminOptions);
+
+                // Wait briefly for EF to be sure migrations are applied
+                Console.WriteLine("Waiting for database migrations to complete...");
+                System.Threading.Thread.Sleep(10000);
 
                 Console.WriteLine("Starting CapShop Data Seed...");
-
                 SeedOrchestrator.SeedAll(authContext, catalogContext, orderContext, adminContext);
-
-                Console.WriteLine("Seed completed successfully!");
+                Console.WriteLine("✅ Seed completed successfully!");
             }
             catch (Exception ex)
             {
@@ -55,11 +56,8 @@ namespace CapShop.DataSeeder
                 Console.ForegroundColor = ConsoleColor.Red;
                 if (ex.InnerException != null && ex.InnerException.Message.Contains("Invalid object name"))
                 {
-                    Console.WriteLine("ERROR: Database tables not found. Please run migrations first:");
-                    Console.WriteLine("  cd backend/Services/AuthService/CapShop.AuthService && dotnet ef database update");
-                    Console.WriteLine("  cd backend/Services/CatalogService/CapShop.CatalogService && dotnet ef database update");
-                    Console.WriteLine("  cd backend/Services/OrderService/CapShop.OrderService && dotnet ef database update");
-                    Console.WriteLine("  cd backend/Services/AdminService/CapShop.AdminService && dotnet ef database update");
+                    Console.WriteLine("ERROR: Database tables not found. Migrations may not have run yet.");
+                    Console.WriteLine("The microservices apply migrations on startup — retry after they are healthy.");
                 }
                 else
                 {
@@ -67,6 +65,7 @@ namespace CapShop.DataSeeder
                     Console.WriteLine(ex.StackTrace);
                 }
                 Console.ForegroundColor = originalColor;
+                Environment.Exit(1);
             }
         }
     }

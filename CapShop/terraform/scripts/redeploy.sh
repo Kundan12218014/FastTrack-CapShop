@@ -37,8 +37,8 @@ cd "$APP_DIR"
 docker compose down --remove-orphans || true
 
 # ── 3. Build updated images ───────────────────────────────────────────────
-log "🔨  Building Docker images (this may take a few minutes)..."
-docker compose build --no-cache
+log "🔨  Building Docker images (caching enabled)..."
+docker compose build
 
 # ── 4. Start services ─────────────────────────────────────────────────────
 log "🚀  Starting all services..."

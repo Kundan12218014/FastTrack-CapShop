@@ -1,0 +1,25 @@
+# Copy this file to terraform.tfvars — NEVER commit it to git.
+# terraform.tfvars is already in .gitignore.
+
+# ── General ──────────────────────────────────────────────────────────────────
+location     = "East US"   # cheapest: East US, West Europe, Southeast Asia
+environment  = "dev"
+project_name = "capshop"
+
+# ── Virtual Machine ───────────────────────────────────────────────────────────
+vm_size          = "Standard_B2ms"   # 2 vCPU, 8 GB RAM — runs all services comfortably
+admin_username   = "capshop"
+allowed_ssh_cidr = "*"               # Restrict to your IP for production: "1.2.3.4/32"
+
+# ── GitHub Repo ───────────────────────────────────────────────────────────────
+# Public repo:  https://github.com/YOUR_USERNAME/CapShop
+# Private repo: https://YOUR_PAT@github.com/YOUR_USERNAME/CapShop
+github_repo_url = "https://github.com/YOUR_USERNAME/CapShop"
+
+# ── Secrets ───────────────────────────────────────────────────────────────────
+sql_sa_password = "CHANGE_ME_Strong_SQL_Password_123!"
+
+smtp_email    = "your-email@gmail.com"
+smtp_password = "your-gmail-app-password"    # Use Gmail App Password
+smtp_host     = "smtp.gmail.com"
+smtp_port     = "587"

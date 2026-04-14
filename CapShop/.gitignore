@@ -39,6 +39,18 @@ artifacts/
 TestResults/
 
 # Docker overrides / local-only files
+# NOTE: docker-compose.yml is tracked in git — it is needed for VM deployment
 docker-compose.override.yml
-docker-compose.yml
 
+# ── Terraform ────────────────────────────────────────────────────────────────
+# NEVER commit secrets or state!
+terraform/terraform.tfvars
+terraform/*.tfvars
+terraform/capshop_vm.pem        # Generated SSH private key — keep safe!
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/tfplan
+terraform/*.tfplan
+terraform/.terraform.tfstate.lock.info

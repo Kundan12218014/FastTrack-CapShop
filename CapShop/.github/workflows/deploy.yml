@@ -1,0 +1,60 @@
+name: Deploy to Azure VM
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:         # Manual trigger button in GitHub UI
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 1 — Run all backend unit tests first
+  # ───────────────────────────────────────────────────────────────────────────
+  test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.x"
+
+      - name: Run all test projects
+        run: |
+          dotnet test tests/CapShop.AuthService.Tests/CapShop.AuthService.Tests.csproj \
+            --configuration Release --logger "console;verbosity=minimal"
+          dotnet test tests/CapShop.CatalogService.Tests/CapShop.CatalogService.Tests.csproj \
+            --configuration Release --logger "console;verbosity=minimal"
+          dotnet test tests/CapShop.OrderService.Tests/CapShop.OrderService.Tests.csproj \
+            --configuration Release --logger "console;verbosity=minimal"
+          dotnet test tests/CapShop.AdminService.Tests/CapShop.AdminService.Tests.csproj \
+            --configuration Release --logger "console;verbosity=minimal"
+        working-directory: CapShop/backend
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # JOB 2 — SSH into the Azure VM and run redeploy.sh
+  # ───────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Azure VM
+    runs-on: ubuntu-latest
+    needs: test                  # Only deploys if tests pass
+
+    steps:
+      - name: SSH Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.VM_IP }}
+          username: ${{ secrets.VM_USERNAME }}
+          key:      ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          timeout:  15m
+          script: |
+            # Run the redeployment script on the Azure VM
+            /opt/redeploy.sh
+
+      - name: Report success
+        run: |
+          echo "✅ Deployment complete!"
+          echo "🌐 Frontend : http://${{ secrets.VM_IP }}:8080"
+          echo "🔌 Gateway  : http://${{ secrets.VM_IP }}:5000"

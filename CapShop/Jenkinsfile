@@ -10,11 +10,11 @@ pipeline {
     agent any
 
     environment {
-        SQL_SA_PASSWORD = credentials('capshop-sql-sa-password')
-        AUTH_SMTP_EMAIL = credentials('capshop-smtp-email')
+        SQL_SA_PASSWORD    = credentials('capshop-sql-sa-password')
+        AUTH_SMTP_EMAIL    = credentials('capshop-smtp-email')
         AUTH_SMTP_PASSWORD = credentials('capshop-smtp-password')
-        AUTH_SMTP_HOST = 'smtp.gmail.com'
-        AUTH_SMTP_PORT = '587'
+        AUTH_SMTP_HOST     = 'smtp.gmail.com'
+        AUTH_SMTP_PORT     = '587'
     }
 
     options {
@@ -23,12 +23,12 @@ pipeline {
     }
 
     stages {
+        // ─────────────────────────────────────────────────────────────────
         stage('Checkout') {
-            steps {
-                checkout scm
-            }
+            steps { checkout scm }
         }
 
+        // ─────────────────────────────────────────────────────────────────
         stage('Backend Tests') {
             steps {
                 script {
@@ -38,14 +38,17 @@ pipeline {
                         'tests/CapShop.OrderService.Tests/CapShop.OrderService.Tests.csproj',
                         'tests/CapShop.AdminService.Tests/CapShop.AdminService.Tests.csproj'
                     ]
-
                     for (project in testProjects) {
-                        runCommand("dotnet test ${project} --configuration Release", "dotnet test ${project} --configuration Release")
+                        runCommand(
+                            "dotnet test ${project} --configuration Release",
+                            "dotnet test ${project} --configuration Release"
+                        )
                     }
                 }
             }
         }
 
+        // ─────────────────────────────────────────────────────────────────
         stage('Frontend Build') {
             steps {
                 dir('frontend') {
@@ -57,23 +60,18 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
-            steps {
-                script {
-                    runCommand('docker compose build', 'docker compose build')
-                }
-            }
-        }
-
-        stage('Smoke Test Stack') {
+        // ─────────────────────────────────────────────────────────────────
+        // Local smoke test — optional, only if Docker is on the Jenkins agent
+        stage('Local Smoke Test') {
+            when { not { branch 'main' } }
             steps {
                 script {
                     try {
-                        runCommand('docker compose up -d', 'docker compose up -d')
+                        runCommand('docker compose up -d --build', 'docker compose up -d --build')
                         sleep(time: 60, unit: 'SECONDS')
                         runCommand(
                             'curl --fail http://localhost:5000/gateway/admin/health',
-                            'powershell -Command "Invoke-WebRequest -UseBasicParsing http://localhost:5000/gateway/admin/health | Select-Object -ExpandProperty StatusCode"'
+                            'powershell -Command "Invoke-WebRequest -UseBasicParsing http://localhost:5000/gateway/admin/health"'
                         )
                     } finally {
                         runCommand('docker compose down', 'docker compose down')
@@ -82,15 +80,37 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
-            when {
-                branch 'main'
-            }
+        // ─────────────────────────────────────────────────────────────────
+        // SSH Deploy to Azure VM — runs on main branch only
+        stage('Deploy to Azure VM') {
+            when { branch 'main' }
             steps {
                 script {
-                    runCommand('docker compose up -d --build', 'docker compose up -d --build')
+                    // Requires Jenkins credential: azure-vm-ssh-key (SSH private key)
+                    // and azure-vm-ip (secret text with VM IP address)
+                    withCredentials([
+                        string(credentialsId: 'azure-vm-ip',       variable: 'VM_IP'),
+                        string(credentialsId: 'azure-vm-username',  variable: 'VM_USER'),
+                        sshUserPrivateKey(
+                            credentialsId: 'azure-vm-ssh-key',
+                            keyFileVariable: 'VM_KEY'
+                        )
+                    ]) {
+                        runCommand("""
+                            ssh -i \$VM_KEY \
+                                -o StrictHostKeyChecking=no \
+                                -o ConnectTimeout=30 \
+                                \$VM_USER@\$VM_IP \
+                                '/opt/redeploy.sh'
+                        """)
+                    }
                 }
             }
         }
+    }
+
+    post {
+        success { echo "✅ Pipeline succeeded!" }
+        failure { echo "❌ Pipeline failed — check logs above." }
     }
 }

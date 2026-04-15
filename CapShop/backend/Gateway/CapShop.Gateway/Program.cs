@@ -1,7 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
 
@@ -158,15 +157,7 @@ builder.Services.AddCors(options =>
 // balancing, request aggregation, and the middleware pipeline builder.
 // ══════════════════════════════════════════════════════════════════════════
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("gateway", new OpenApiInfo
-    {
-        Title = "CapShop Gateway",
-        Version = "v1",
-        Description = "Gateway entry point and aggregated downstream Swagger links."
-    });
-});
+builder.Services.AddSwaggerGen();
 
 builder.Services.AddOcelot(builder.Configuration);
 

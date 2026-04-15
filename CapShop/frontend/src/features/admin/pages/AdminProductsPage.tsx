@@ -21,6 +21,7 @@ export const AdminProductsPage = () => {
   const [products,    setProducts]    = useState<AdminProductDto[]>([]);
   const [categories,  setCategories]  = useState<CategoryDto[]>([]);
   const [loading,     setLoading]     = useState(true);
+  const [fetchError,  setFetchError]  = useState<string | null>(null);
   const [search,      setSearch]      = useState("");
   const [page,        setPage]        = useState(1);
   const [totalPages,  setTotalPages]  = useState(1);
@@ -31,10 +32,15 @@ export const AdminProductsPage = () => {
 
   const fetchProducts = async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const res = await getAdminProducts(search || undefined, page, 10);
       setProducts(res.items);
       setTotalPages(res.totalPages);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message ?? e?.message ?? "Failed to load products.";
+      setFetchError(msg);
+      toast.error(msg);
     } finally { setLoading(false); }
   };
 
@@ -130,7 +136,12 @@ export const AdminProductsPage = () => {
         </div>
 
         {loading ? <div className="p-8"><Loader /></div> :
-         products.length === 0 ? (
+         fetchError ? (
+          <div className="p-8 text-center space-y-2">
+            <p className="text-danger text-sm font-medium">{fetchError}</p>
+            <button onClick={fetchProducts} className="btn-primary text-xs py-1.5 px-3">Retry</button>
+          </div>
+         ) : products.length === 0 ? (
           <div className="p-8 text-center text-gray-400 text-sm">No products found.</div>
         ) : products.map(p => (
           <div key={p.id}

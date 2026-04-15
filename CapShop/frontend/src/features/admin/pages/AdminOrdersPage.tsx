@@ -15,6 +15,7 @@ const NEXT_STATUS: Record<string, string[]> = {
 export const AdminOrdersPage = () => {
   const [orders,   setOrders]   = useState<AdminOrderSummaryDto[]>([]);
   const [loading,  setLoading]  = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [search,   setSearch]   = useState("");
   const [status,   setStatus]   = useState("");
   const [page,     setPage]     = useState(1);
@@ -22,10 +23,15 @@ export const AdminOrdersPage = () => {
 
   const fetchOrders = async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const res = await getAdminOrders(search || undefined, status || undefined, page, 10);
       setOrders(res.items);
       setTotalPages(res.totalPages);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message ?? e?.message ?? "Failed to load orders.";
+      setFetchError(msg);
+      toast.error(msg);
     } finally { setLoading(false); }
   };
 
@@ -73,7 +79,12 @@ export const AdminOrdersPage = () => {
         </div>
 
         {loading ? <div className="p-8"><Loader /></div> :
-         orders.length === 0 ? (
+         fetchError ? (
+          <div className="p-8 text-center space-y-2">
+            <p className="text-danger text-sm font-medium">{fetchError}</p>
+            <button onClick={fetchOrders} className="btn-primary text-xs py-1.5 px-3">Retry</button>
+          </div>
+         ) : orders.length === 0 ? (
           <div className="p-8 text-center text-gray-400 text-sm">No orders found.</div>
         ) : orders.map(order => (
           <div key={order.id}

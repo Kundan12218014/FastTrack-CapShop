@@ -148,3 +148,31 @@ export async function getStatusSplit(): Promise<any> {
   );
   return res.data.data!;
 }
+
+export async function downloadSalesCsv(from: string, to: string): Promise<void> {
+  const res = await apiClient.get("/admin/reports/sales/export/csv", {
+    params: { from, to },
+    responseType: 'blob'
+  });
+  const url = window.URL.createObjectURL(new Blob([res.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `sales_report_${from}_to_${to}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+export async function downloadSalesPdf(from: string, to: string): Promise<void> {
+  const res = await apiClient.get("/admin/reports/sales/export/pdf", {
+    params: { from, to },
+    responseType: 'blob'
+  });
+  const url = window.URL.createObjectURL(new Blob([res.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `sales_report_${from}_to_${to}.pdf`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}

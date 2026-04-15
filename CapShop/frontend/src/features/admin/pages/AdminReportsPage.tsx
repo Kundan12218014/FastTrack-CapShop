@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Download, BarChart3, PieChart } from "lucide-react";
-import { getSalesReport, getStatusSplit } from "../../../api/adminApi";
+import { getSalesReport, getStatusSplit, downloadSalesCsv, downloadSalesPdf } from "../../../api/adminApi";
 import { Loader } from "../../../components/shared/Loader";
 import toast from "react-hot-toast";
 
@@ -26,11 +26,15 @@ export const AdminReportsPage = () => {
 
   useEffect(() => { fetchReports(); }, []);
 
-  const exportCsv = () => {
-    window.open(`/gateway/admin/reports/sales/export/csv?from=${from}&to=${to}`, "_blank");
+  const exportCsv = async () => {
+    try {
+      await downloadSalesCsv(from, to);
+    } catch { toast.error("Failed to download CSV"); }
   };
-  const exportPdf = () => {
-    window.open(`/gateway/admin/reports/sales/export/pdf?from=${from}&to=${to}`, "_blank");
+  const exportPdf = async () => {
+    try {
+      await downloadSalesPdf(from, to);
+    } catch { toast.error("Failed to download PDF"); }
   };
 
   const maxRevenue = salesReport?.dailyBreakdown?.length

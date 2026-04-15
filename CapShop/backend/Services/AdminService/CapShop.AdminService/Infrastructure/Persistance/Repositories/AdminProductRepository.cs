@@ -47,7 +47,8 @@ public class AdminProductRepository : IAdminProductRepository
                     p.UpdatedAt
                 FROM CapShopCatalogDB.catalog.Products p
                 INNER JOIN CapShopCatalogDB.catalog.Categories c ON c.Id = p.CategoryId
-                WHERE (@Search = '%%' OR p.Name LIKE @Search OR p.Description LIKE @Search)
+                WHERE p.IsActive = 1
+                  AND (@Search = '%%' OR p.Name LIKE @Search OR p.Description LIKE @Search)
                 ORDER BY p.CreatedAt DESC
                 OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
                 new Microsoft.Data.SqlClient.SqlParameter("@Search", searchTerm))
@@ -57,7 +58,8 @@ public class AdminProductRepository : IAdminProductRepository
             .SqlQueryRaw<int>($@"
                 SELECT COUNT(*) AS Value
                 FROM CapShopCatalogDB.catalog.Products p
-                WHERE (@Search = '%%' OR p.Name LIKE @Search OR p.Description LIKE @Search)",
+                WHERE p.IsActive = 1
+                  AND (@Search = '%%' OR p.Name LIKE @Search OR p.Description LIKE @Search)",
                 new Microsoft.Data.SqlClient.SqlParameter("@Search", searchTerm))
             .FirstOrDefaultAsync(ct);
 

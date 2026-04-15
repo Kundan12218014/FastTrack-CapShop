@@ -19,6 +19,7 @@ public record PaymentCompletedIntegrationEvent(
     Guid OrderId,
     string PaymentMethod,
     string TransactionId,
+    List<OrderCancelledItem> Items,
     DateTime ProcessedAt);
 
 // Step 2b: Payment Failed -> Triggers Order Cancellation

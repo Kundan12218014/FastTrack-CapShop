@@ -89,16 +89,33 @@ export const AdminProductsPage = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this product?")) return;
-    try { await deleteProduct(id); toast.success("Product deleted."); fetchProducts(); }
-    catch { toast.error("Could not delete."); }
+    try {
+      await deleteProduct(id);
+      setProducts(current => current.filter(product => product.id !== id));
+      toast.success("Product deleted.");
+      fetchProducts();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? "Could not delete.");
+    }
   };
 
   const handleToggleActive = async (id: string, current: boolean) => {
     try {
       await setProductActive(id, !current);
+      if (current) {
+        setProducts(items => items.filter(product => product.id !== id));
+      } else {
+        setProducts(items =>
+          items.map(product =>
+            product.id === id ? { ...product, isActive: true } : product,
+          ),
+        );
+      }
       toast.success(`Product ${!current ? "activated" : "deactivated"}.`);
       fetchProducts();
-    } catch { toast.error("Could not update status."); }
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? "Could not update status.");
+    }
   };
 
   return (

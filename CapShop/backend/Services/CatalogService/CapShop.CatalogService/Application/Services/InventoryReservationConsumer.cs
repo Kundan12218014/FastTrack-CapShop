@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Data;
 using CapShop.CatalogService.Infrastructure.Persistence;
 using CapShop.Shared.Configuration;
 using CapShop.Shared.Contracts.Saga;
@@ -80,11 +81,13 @@ public class InventoryReservationConsumer : BackgroundService
 
                 _logger.LogInformation("SAGA STEP 3: Reserving Inventory for Order {OrderId}.", message.OrderId);
 
-                // NOTE: PaymentCompletedIntegrationEvent doesn't carry item quantities because 
-                // CatalogService and OrderService have isolated DBs (Database-per-Service pattern).
-                // In production, you'd pass item data in the event payload. For now we emit success 
-                // immediately — the actual stock deduction already happened via OrderCancelledConsumer.
-                var reservationSucceeded = true;
+                if (message.Items is null || message.Items.Count == 0)
+                {
+                    throw new InvalidOperationException(
+                        $"PaymentCompleted event for order {message.OrderId} did not include any items.");
+                }
+
+                var reservationSucceeded = await TryReserveInventoryAsync(message, stoppingToken);
 
                 if (reservationSucceeded)
                 {
@@ -117,6 +120,75 @@ public class InventoryReservationConsumer : BackgroundService
 
         _channel.BasicConsume(_options.SagaPaymentCompletedQueueName, autoAck: false, consumer);
         return Task.Delay(Timeout.Infinite, stoppingToken);
+    }
+
+    private async Task<bool> TryReserveInventoryAsync(
+        PaymentCompletedIntegrationEvent message,
+        CancellationToken cancellationToken)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
+
+        await using var transaction = await context.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable,
+            cancellationToken);
+
+        var groupedItems = message.Items
+            .GroupBy(item => item.ProductId)
+            .Select(group => new
+            {
+                ProductId = group.Key,
+                Quantity = group.Sum(item => item.Quantity)
+            })
+            .ToList();
+
+        var productIds = groupedItems.Select(item => item.ProductId).ToList();
+
+        var products = await context.Products
+            .Where(product => productIds.Contains(product.Id))
+            .ToDictionaryAsync(product => product.Id, cancellationToken);
+
+        foreach (var item in groupedItems)
+        {
+            if (!products.TryGetValue(item.ProductId, out var product))
+            {
+                _logger.LogWarning(
+                    "SAGA: Product {ProductId} was not found while reserving stock for order {OrderId}.",
+                    item.ProductId,
+                    message.OrderId);
+                await transaction.RollbackAsync(cancellationToken);
+                return false;
+            }
+
+            if (product.StockQuantity < item.Quantity)
+            {
+                _logger.LogWarning(
+                    "SAGA: Not enough stock for product {ProductId} on order {OrderId}. Requested {Requested}, available {Available}.",
+                    item.ProductId,
+                    message.OrderId,
+                    item.Quantity,
+                    product.StockQuantity);
+                await transaction.RollbackAsync(cancellationToken);
+                return false;
+            }
+        }
+
+        foreach (var item in groupedItems)
+        {
+            var product = products[item.ProductId];
+            product.UpdateStock(product.StockQuantity - item.Quantity);
+
+            _logger.LogInformation(
+                "Reserved {Quantity} units of product {ProductId} for order {OrderId}. Remaining stock: {Remaining}.",
+                item.Quantity,
+                item.ProductId,
+                message.OrderId,
+                product.StockQuantity);
+        }
+
+        await context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return true;
     }
 
     public override void Dispose()

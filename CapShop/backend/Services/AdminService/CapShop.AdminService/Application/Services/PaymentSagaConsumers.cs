@@ -87,6 +87,7 @@ public class PaymentSagaConsumer : BackgroundService
                             message.OrderId,
                             message.PaymentMethod,
                             Guid.NewGuid().ToString("N"),
+                            message.Items,
                             DateTime.UtcNow),
                         stoppingToken);
                 }

@@ -135,6 +135,7 @@ public class AdminOrderSummaryDto
     public decimal TotalAmount { get; set; }
     public string Status { get; set; } = string.Empty;
     public string PaymentMethod { get; set; } = string.Empty;
+    public string? TransactionId { get; set; }
     public DateTime PlacedAt { get; set; }
     public int ItemCount { get; set; }
 }

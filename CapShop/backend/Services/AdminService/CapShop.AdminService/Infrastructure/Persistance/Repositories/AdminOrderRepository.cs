@@ -28,8 +28,15 @@ public class AdminOrderRepository : IAdminOrderRepository
                     o.UserId,
                     u.Email AS CustomerEmail,
                     o.TotalAmount,
-                    o.Status,
+                    CASE
+                        WHEN o.Status = 'PaymentPending'
+                             AND o.PaymentMethod <> 'COD'
+                             AND NULLIF(LTRIM(RTRIM(ISNULL(o.PaymentTransactionId, ''))), '') IS NOT NULL
+                            THEN 'Paid'
+                        ELSE o.Status
+                    END AS Status,
                     o.PaymentMethod,
+                    o.PaymentTransactionId AS TransactionId,
                     o.PlacedAt,
                     COUNT(oi.Id) AS ItemCount
                 FROM CapShopOrderDB.orders.Orders o
@@ -69,7 +76,15 @@ public class AdminOrderRepository : IAdminOrderRepository
                 SELECT
                     o.Id, o.OrderNumber, o.UserId,
                     u.Email AS CustomerEmail,
-                    o.TotalAmount, o.Status, o.PaymentMethod,
+                    o.TotalAmount,
+                    CASE
+                        WHEN o.Status = 'PaymentPending'
+                             AND o.PaymentMethod <> 'COD'
+                             AND NULLIF(LTRIM(RTRIM(ISNULL(o.PaymentTransactionId, ''))), '') IS NOT NULL
+                            THEN 'Paid'
+                        ELSE o.Status
+                    END AS Status,
+                    o.PaymentMethod,
                     o.PaymentTransactionId AS TransactionId,
                     o.PlacedAt,
                     o.ShipFullName, o.ShipAddressLine,
@@ -109,20 +124,49 @@ public class AdminOrderRepository : IAdminOrderRepository
         Guid id, string newStatus, string changedBy, string? remarks, CancellationToken ct = default)
     {
         // Validate allowed transitions
-        var currentStatusResult = await _context.Database
-            .SqlQueryRaw<string>("SELECT Status AS Value FROM CapShopOrderDB.orders.Orders WHERE Id = @Id",
+        var currentOrder = await _context.Database
+            .SqlQueryRaw<OrderStateRow>(@"
+                SELECT
+                    Status,
+                    PaymentMethod,
+                    PaymentTransactionId
+                FROM CapShopOrderDB.orders.Orders
+                WHERE Id = @Id",
                 new Microsoft.Data.SqlClient.SqlParameter("@Id", id))
             .FirstOrDefaultAsync(ct);
 
-        if (currentStatusResult == null)
+        if (currentOrder == null)
             throw new NotFoundException("Order", id);
 
-        var current = currentStatusResult;
-        var paymentMethod = await _context.Database
-            .SqlQueryRaw<string>("SELECT PaymentMethod AS Value FROM CapShopOrderDB.orders.Orders WHERE Id = @Id",
-                new Microsoft.Data.SqlClient.SqlParameter("@Id", id))
-            .FirstOrDefaultAsync(ct)
-            ?? throw new NotFoundException("Order", id);
+        var current = currentOrder.Status;
+        var paymentMethod = currentOrder.PaymentMethod;
+        var hasCapturedOnlinePayment =
+            !string.Equals(paymentMethod, "COD", StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(currentOrder.PaymentTransactionId);
+
+        if (current == "PaymentPending" && hasCapturedOnlinePayment)
+        {
+            await _context.Database.ExecuteSqlRawAsync(@"
+                UPDATE CapShopOrderDB.orders.Orders
+                SET Status = 'Paid', UpdatedAt = @Now
+                WHERE Id = @Id AND Status = 'PaymentPending'",
+                new Microsoft.Data.SqlClient.SqlParameter("@Id", id),
+                new Microsoft.Data.SqlClient.SqlParameter("@Now", DateTime.UtcNow));
+
+            await _context.Database.ExecuteSqlRawAsync(@"
+                INSERT INTO CapShopOrderDB.orders.OrderStatusHistory
+                    (Id, OrderId, FromStatus, ToStatus, ChangedBy, Remarks, ChangedAt)
+                VALUES (@Id, @OrderId, @From, @To, @By, @Remarks, @Now)",
+                new Microsoft.Data.SqlClient.SqlParameter("@Id", Guid.NewGuid()),
+                new Microsoft.Data.SqlClient.SqlParameter("@OrderId", id),
+                new Microsoft.Data.SqlClient.SqlParameter("@From", "PaymentPending"),
+                new Microsoft.Data.SqlClient.SqlParameter("@To", "Paid"),
+                new Microsoft.Data.SqlClient.SqlParameter("@By", "system:payment-sync"),
+                new Microsoft.Data.SqlClient.SqlParameter("@Remarks", "Backfilled paid status for a successful online payment."),
+                new Microsoft.Data.SqlClient.SqlParameter("@Now", DateTime.UtcNow));
+
+            current = "Paid";
+        }
 
         var isCod = string.Equals(paymentMethod, "COD", StringComparison.OrdinalIgnoreCase);
 
@@ -162,5 +206,12 @@ public class AdminOrderRepository : IAdminOrderRepository
             new Microsoft.Data.SqlClient.SqlParameter("@By", changedBy),
             new Microsoft.Data.SqlClient.SqlParameter("@Remarks", (object?)remarks ?? DBNull.Value),
             new Microsoft.Data.SqlClient.SqlParameter("@Now", DateTime.UtcNow));
+    }
+
+    private sealed class OrderStateRow
+    {
+        public string Status { get; set; } = string.Empty;
+        public string PaymentMethod { get; set; } = string.Empty;
+        public string? PaymentTransactionId { get; set; }
     }
 }

@@ -77,7 +77,7 @@ public class GetMyOrdersQueryHandler
             Id = o.Id,
             OrderNumber = o.OrderNumber,
             TotalAmount = o.TotalAmount,
-            Status = o.Status.ToString(),
+            Status = PlaceOrderCommandHandler.GetDisplayStatus(o),
             PlacedAt = o.PlacedAt,
             ItemCount = o.Items.Sum(i => i.Quantity)
         });

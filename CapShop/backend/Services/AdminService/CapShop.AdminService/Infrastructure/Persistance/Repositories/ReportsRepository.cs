@@ -17,14 +17,26 @@ public class ReportsRepository : IReportsRepository
         var dailyBreakdown = await _context.Database
             .SqlQueryRaw<DailySalesDto>(@"
                 SELECT
-                    CAST(PlacedAt AS DATE) AS Date,
-                    ISNULL(SUM(TotalAmount), 0) AS Revenue,
+                    CAST(src.PlacedAt AS DATE) AS Date,
+                    ISNULL(SUM(src.TotalAmount), 0) AS Revenue,
                     COUNT(*) AS Orders
-                FROM CapShopOrderDB.orders.Orders
-                WHERE Status IN ('Paid','Packed','Shipped','Delivered')
-                  AND PlacedAt >= @From AND PlacedAt <= @To
-                GROUP BY CAST(PlacedAt AS DATE)
-                ORDER BY CAST(PlacedAt AS DATE)",
+                FROM (
+                    SELECT
+                        o.TotalAmount,
+                        o.PlacedAt,
+                        CASE
+                            WHEN o.Status = 'PaymentPending'
+                                 AND o.PaymentMethod <> 'COD'
+                                 AND NULLIF(LTRIM(RTRIM(ISNULL(o.PaymentTransactionId, ''))), '') IS NOT NULL
+                                THEN 'Paid'
+                            ELSE o.Status
+                        END AS EffectiveStatus
+                    FROM CapShopOrderDB.orders.Orders o
+                ) src
+                WHERE src.EffectiveStatus IN ('Paid','Packed','Shipped','Delivered')
+                  AND src.PlacedAt >= @From AND src.PlacedAt <= @To
+                GROUP BY CAST(src.PlacedAt AS DATE)
+                ORDER BY CAST(src.PlacedAt AS DATE)",
                 new Microsoft.Data.SqlClient.SqlParameter("@From", from),
                 new Microsoft.Data.SqlClient.SqlParameter("@To", to))
             .ToListAsync(ct);
@@ -49,9 +61,24 @@ public class ReportsRepository : IReportsRepository
     {
         var breakdown = await _context.Database
             .SqlQueryRaw<StatusCountRaw>(@"
-                SELECT Status, COUNT(*) AS Count
-                FROM CapShopOrderDB.orders.Orders
-                GROUP BY Status")
+                SELECT
+                    CASE
+                        WHEN o.Status = 'PaymentPending'
+                             AND o.PaymentMethod <> 'COD'
+                             AND NULLIF(LTRIM(RTRIM(ISNULL(o.PaymentTransactionId, ''))), '') IS NOT NULL
+                            THEN 'Paid'
+                        ELSE o.Status
+                    END AS Status,
+                    COUNT(*) AS Count
+                FROM CapShopOrderDB.orders.Orders o
+                GROUP BY
+                    CASE
+                        WHEN o.Status = 'PaymentPending'
+                             AND o.PaymentMethod <> 'COD'
+                             AND NULLIF(LTRIM(RTRIM(ISNULL(o.PaymentTransactionId, ''))), '') IS NOT NULL
+                            THEN 'Paid'
+                        ELSE o.Status
+                    END")
             .ToListAsync(ct);
 
         var total = breakdown.Sum(b => b.Count);

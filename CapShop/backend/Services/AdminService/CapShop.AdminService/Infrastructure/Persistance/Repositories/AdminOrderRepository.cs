@@ -23,32 +23,44 @@ public class AdminOrderRepository : IAdminOrderRepository
         var items = await _context.Database
             .SqlQueryRaw<AdminOrderSummaryDto>($@"
                 SELECT
-                    o.Id,
-                    o.OrderNumber,
-                    o.UserId,
-                    u.Email AS CustomerEmail,
-                    o.TotalAmount,
-                    CASE
-                        WHEN o.Status = 'PaymentPending'
-                             AND o.PaymentMethod <> 'COD'
-                             AND NULLIF(LTRIM(RTRIM(ISNULL(o.PaymentTransactionId, ''))), '') IS NOT NULL
-                            THEN 'Paid'
-                        ELSE o.Status
-                    END AS Status,
-                    o.PaymentMethod,
-                    o.PaymentTransactionId AS TransactionId,
-                    o.PlacedAt,
+                    src.Id,
+                    src.OrderNumber,
+                    src.UserId,
+                    src.CustomerEmail,
+                    src.TotalAmount,
+                    src.Status,
+                    src.PaymentMethod,
+                    src.TransactionId,
+                    src.PlacedAt,
                     COUNT(oi.Id) AS ItemCount
-                FROM CapShopOrderDB.orders.Orders o
-                LEFT JOIN CapShopAuthDB.auth.Users u ON u.Id = o.UserId
-                LEFT JOIN CapShopOrderDB.orders.OrderItems oi ON oi.OrderId = o.Id
+                FROM (
+                    SELECT
+                        o.Id,
+                        o.OrderNumber,
+                        o.UserId,
+                        u.Email AS CustomerEmail,
+                        o.TotalAmount,
+                        CASE
+                            WHEN o.Status = 'PaymentPending'
+                                 AND o.PaymentMethod <> 'COD'
+                                 AND NULLIF(LTRIM(RTRIM(ISNULL(o.PaymentTransactionId, ''))), '') IS NOT NULL
+                                THEN 'Paid'
+                            ELSE o.Status
+                        END AS Status,
+                        o.PaymentMethod,
+                        o.PaymentTransactionId AS TransactionId,
+                        o.PlacedAt
+                    FROM CapShopOrderDB.orders.Orders o
+                    LEFT JOIN CapShopAuthDB.auth.Users u ON u.Id = o.UserId
+                ) src
+                LEFT JOIN CapShopOrderDB.orders.OrderItems oi ON oi.OrderId = src.Id
                 WHERE
-                    (@Status = '' OR o.Status = @Status)
-                    AND (@Search = '%%' OR o.OrderNumber LIKE @Search OR u.Email LIKE @Search)
+                    (@Status = '' OR src.Status = @Status)
+                    AND (@Search = '%%' OR src.OrderNumber LIKE @Search OR src.CustomerEmail LIKE @Search)
                 GROUP BY
-                    o.Id, o.OrderNumber, o.UserId, u.Email,
-                    o.TotalAmount, o.Status, o.PaymentMethod, o.PlacedAt
-                ORDER BY o.PlacedAt DESC
+                    src.Id, src.OrderNumber, src.UserId, src.CustomerEmail,
+                    src.TotalAmount, src.Status, src.PaymentMethod, src.TransactionId, src.PlacedAt
+                ORDER BY src.PlacedAt DESC
                 OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
                 new Microsoft.Data.SqlClient.SqlParameter("@Status", statusTerm),
                 new Microsoft.Data.SqlClient.SqlParameter("@Search", searchTerm))
@@ -56,11 +68,22 @@ public class AdminOrderRepository : IAdminOrderRepository
 
         var totalCount = await _context.Database
             .SqlQueryRaw<int>(@"
-                SELECT COUNT(DISTINCT o.Id) AS Value
-                FROM CapShopOrderDB.orders.Orders o
-                LEFT JOIN CapShopAuthDB.auth.Users u ON u.Id = o.UserId
-                WHERE (@Status = '' OR o.Status = @Status)
-                  AND (@Search = '%%' OR o.OrderNumber LIKE @Search OR u.Email LIKE @Search)",
+                SELECT COUNT(*) AS Value
+                FROM (
+                    SELECT o.Id
+                    FROM CapShopOrderDB.orders.Orders o
+                    LEFT JOIN CapShopAuthDB.auth.Users u ON u.Id = o.UserId
+                    WHERE
+                        (@Status = '' OR
+                            CASE
+                                WHEN o.Status = 'PaymentPending'
+                                     AND o.PaymentMethod <> 'COD'
+                                     AND NULLIF(LTRIM(RTRIM(ISNULL(o.PaymentTransactionId, ''))), '') IS NOT NULL
+                                    THEN 'Paid'
+                                ELSE o.Status
+                            END = @Status)
+                        AND (@Search = '%%' OR o.OrderNumber LIKE @Search OR u.Email LIKE @Search)
+                ) AS countedOrders",
                 new Microsoft.Data.SqlClient.SqlParameter("@Status", statusTerm),
                 new Microsoft.Data.SqlClient.SqlParameter("@Search", searchTerm))
             .FirstOrDefaultAsync(ct);

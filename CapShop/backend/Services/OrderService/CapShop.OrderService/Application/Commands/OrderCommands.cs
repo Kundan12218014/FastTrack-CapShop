@@ -104,12 +104,17 @@ public class PlaceOrderCommandHandler
         PlaceOrderCommand command,
         CancellationToken ct = default)
     {
+        var isCod = string.Equals(command.PaymentMethod, PaymentMethod.COD, StringComparison.OrdinalIgnoreCase);
+
         // 1. Get the active cart
         var cart = await _cartRepository.GetActiveCartByUserIdAsync(command.UserId, ct)
             ?? throw new DomainException("No active cart found.");
 
         if (!cart.Items.Any())
             throw new DomainException("Cannot place an order with an empty cart.");
+
+        if (!isCod && string.IsNullOrWhiteSpace(command.TransactionId))
+            throw new DomainException("A successful online payment transaction is required before placing the order.");
 
         // 2. Build shipping address value object (validates pincode/phone)
         var address = new ShippingAddress(
@@ -138,8 +143,15 @@ public class PlaceOrderCommandHandler
         await _orderRepository.SaveChangesAsync(ct);
         await _cartRepository.DeleteAsync(command.UserId, ct); // Cart fully cleared in Redis
         
-        // 6. Start the Saga
-        await PublishCheckoutInitiatedEventAsync(order, ct);
+        // 6. Continue the checkout flow based on payment method
+        if (isCod)
+        {
+            await PublishCheckoutInitiatedEventAsync(order, ct);
+        }
+        else
+        {
+            await PublishPaymentCompletedEventAsync(order, ct);
+        }
 
         return MapToDto(order);
     }
@@ -169,6 +181,33 @@ public class PlaceOrderCommandHandler
             _logger.LogError(
                 ex,
                 "Order {OrderId} was saved but its RabbitMQ integration event could not be published.",
+                order.Id);
+        }
+    }
+
+    private async Task PublishPaymentCompletedEventAsync(Order order, CancellationToken ct)
+    {
+        var items = order.Items.Select(i => new OrderCancelledItem(i.ProductId, i.Quantity)).ToList();
+
+        var integrationEvent = new CapShop.Shared.Contracts.Saga.PaymentCompletedIntegrationEvent(
+            order.Id,
+            order.PaymentMethod,
+            order.PaymentTransactionId ?? string.Empty,
+            items,
+            DateTime.UtcNow);
+
+        try
+        {
+            await _messagePublisher.PublishAsync(
+                _rabbitMqOptions.SagaPaymentCompletedRoutingKey,
+                integrationEvent,
+                ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Order {OrderId} was saved with successful online payment but its payment completed event could not be published.",
                 order.Id);
         }
     }

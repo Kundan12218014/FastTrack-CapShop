@@ -1,6 +1,71 @@
 {
     "Routes": [
         {
+            "UpstreamPathTemplate": "/gateway/swagger/auth/swagger.json",
+            "UpstreamHttpMethod": [ "GET" ],
+            "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+            "DownstreamScheme": "https",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "localhost",
+                    "Port": 5001
+                }
+            ],
+            "RouteId": "auth-swagger"
+        },
+        {
+            "UpstreamPathTemplate": "/gateway/swagger/catalog/swagger.json",
+            "UpstreamHttpMethod": [ "GET" ],
+            "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+            "DownstreamScheme": "https",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "localhost",
+                    "Port": 5002
+                }
+            ],
+            "RouteId": "catalog-swagger"
+        },
+        {
+            "UpstreamPathTemplate": "/gateway/swagger/orders/swagger.json",
+            "UpstreamHttpMethod": [ "GET" ],
+            "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+            "DownstreamScheme": "https",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "localhost",
+                    "Port": 5003
+                }
+            ],
+            "RouteId": "orders-swagger"
+        },
+        {
+            "UpstreamPathTemplate": "/gateway/swagger/admin/swagger.json",
+            "UpstreamHttpMethod": [ "GET" ],
+            "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+            "DownstreamScheme": "https",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "localhost",
+                    "Port": 5004
+                }
+            ],
+            "RouteId": "admin-swagger"
+        },
+        {
+            "UpstreamPathTemplate": "/gateway/swagger/notifications/swagger.json",
+            "UpstreamHttpMethod": [ "GET" ],
+            "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+            "DownstreamScheme": "https",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "localhost",
+                    "Port": 5005
+                }
+            ],
+            "RouteId": "notifications-swagger"
+        },
+        {
             "UpstreamPathTemplate": "/gateway/notifications/{everything}",
             "UpstreamHttpMethod": [ "GET", "POST", "PUT", "PATCH", "DELETE" ],
             "DownstreamPathTemplate": "/notifications/{everything}",

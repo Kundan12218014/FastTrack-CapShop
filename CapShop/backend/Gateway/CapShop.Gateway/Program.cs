@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
 
@@ -156,6 +157,17 @@ builder.Services.AddCors(options =>
 // AddOcelot() registers all Ocelot internals — route matching, load
 // balancing, request aggregation, and the middleware pipeline builder.
 // ══════════════════════════════════════════════════════════════════════════
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("gateway", new OpenApiInfo
+    {
+        Title = "CapShop Gateway",
+        Version = "v1",
+        Description = "Gateway entry point and aggregated downstream Swagger links."
+    });
+});
+
 builder.Services.AddOcelot(builder.Configuration);
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -170,6 +182,20 @@ builder.Services.AddOcelot(builder.Configuration);
 //                        Nothing registered after UseOcelot() will execute.
 // ══════════════════════════════════════════════════════════════════════════
 var app = builder.Build();
+
+app.UseSwagger();
+app.UseSwaggerUI(options =>
+{
+    options.RoutePrefix = "swagger";
+    options.DocumentTitle = "CapShop Gateway Swagger";
+    options.SwaggerEndpoint("/swagger/gateway/swagger.json", "Gateway");
+    options.SwaggerEndpoint("/gateway/swagger/auth/swagger.json", "Auth Service");
+    options.SwaggerEndpoint("/gateway/swagger/catalog/swagger.json", "Catalog Service");
+    options.SwaggerEndpoint("/gateway/swagger/orders/swagger.json", "Order Service");
+    options.SwaggerEndpoint("/gateway/swagger/admin/swagger.json", "Admin Service");
+    options.SwaggerEndpoint("/gateway/swagger/notifications/swagger.json", "Notification Service");
+    options.DefaultModelsExpandDepth(-1);
+});
 
 app.UseCors("ReactApp");
 app.UseAuthentication();

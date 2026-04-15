@@ -1,6 +1,71 @@
 {
   "Routes": [
     {
+      "UpstreamPathTemplate": "/gateway/swagger/auth/swagger.json",
+      "UpstreamHttpMethod": [ "GET" ],
+      "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "auth-service",
+          "Port": 8080
+        }
+      ],
+      "RouteId": "auth-swagger"
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/swagger/catalog/swagger.json",
+      "UpstreamHttpMethod": [ "GET" ],
+      "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "catalog-service",
+          "Port": 8080
+        }
+      ],
+      "RouteId": "catalog-swagger"
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/swagger/orders/swagger.json",
+      "UpstreamHttpMethod": [ "GET" ],
+      "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "order-service",
+          "Port": 8080
+        }
+      ],
+      "RouteId": "orders-swagger"
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/swagger/admin/swagger.json",
+      "UpstreamHttpMethod": [ "GET" ],
+      "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "admin-service",
+          "Port": 8080
+        }
+      ],
+      "RouteId": "admin-swagger"
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/swagger/notifications/swagger.json",
+      "UpstreamHttpMethod": [ "GET" ],
+      "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "notification-service",
+          "Port": 8080
+        }
+      ],
+      "RouteId": "notifications-swagger"
+    },
+    {
       "UpstreamPathTemplate": "/gateway/notifications/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "PATCH", "DELETE" ],
       "DownstreamPathTemplate": "/notifications/{everything}",

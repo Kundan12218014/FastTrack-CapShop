@@ -28,11 +28,21 @@ namespace CapShop.AuthService.Application.Commands
             var otp = new Random().Next(100000, 999999).ToString();
             user.SetOtp(otp, 10); // Expiry in 10 minutes for password reset
 
-            await _emailService.SendEmailAsync(user.Email, "CapShop Password Reset", $"Your password reset code is: <b>{otp}</b>. It is valid for 10 minutes.");
-            Console.WriteLine($"[EMAIL SENT] Sent Password Reset OTP to {user.Email}");
-
             await _userRepository.UpdateAsync(user, ct);
             await _userRepository.SaveChangesAsync(ct);
+
+            var emailResult = await _emailService.SendEmailAsync(
+                user.Email,
+                "CapShop Password Reset",
+                $"Your password reset code is: <b>{otp}</b>. It is valid for 10 minutes.");
+
+            if (!emailResult.Success)
+            {
+                throw new ServiceUnavailableException(
+                    "We couldn't send the password reset email right now. Please try again later.");
+            }
+
+            Console.WriteLine($"[EMAIL SENT] Sent Password Reset OTP to {user.Email}");
 
             return new { Message = "If that email is registered, a password reset code has been sent." };
         }

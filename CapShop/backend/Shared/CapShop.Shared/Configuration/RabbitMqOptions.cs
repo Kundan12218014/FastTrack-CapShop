@@ -13,6 +13,7 @@ public class RabbitMqOptions
     public string ExchangeName { get; set; } = "capshop.events";
     public string OrderPlacedQueueName { get; set; } = "capshop.admin.orders.placed";
     public string OrderPlacedRoutingKey { get; set; } = "orders.placed";
+    public string NotificationOrderPlacedQueueName { get; set; } = "capshop.notification.orders.placed";
     public string OrderCancelledQueueName { get; set; } = "capshop.catalog.orders.cancelled";
     public string OrderCancelledRoutingKey { get; set; } = "orders.cancelled";
 

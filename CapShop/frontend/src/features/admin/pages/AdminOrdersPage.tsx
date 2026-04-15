@@ -7,16 +7,25 @@ import toast from "react-hot-toast";
 
 const STATUS_OPTIONS = ["", "PaymentPending", "PaymentFailed", "Paid", "Packed", "Shipped", "Delivered", "Cancelled"];
 
+const getDisplayStatus = (order: AdminOrderSummaryDto): string => {
+  if (order.status === "PaymentPending" && order.paymentMethod !== "COD") {
+    return "Paid";
+  }
+
+  return order.status;
+};
+
 const getNextStatuses = (order: AdminOrderSummaryDto): string[] => {
   const isCod = order.paymentMethod === "COD";
+  const status = getDisplayStatus(order);
 
-  if (order.status === "PaymentPending")
+  if (status === "PaymentPending")
     return isCod ? ["Paid", "Cancelled", "PaymentFailed"] : [];
 
-  if (order.status === "PaymentFailed")
+  if (status === "PaymentFailed")
     return isCod ? ["PaymentPending", "Cancelled"] : [];
 
-  switch (order.status) {
+  switch (status) {
     case "Paid":
       return ["Packed", "Cancelled"];
     case "Packed":
@@ -114,7 +123,7 @@ export const AdminOrdersPage = () => {
             <div className="col-span-3 text-sm text-gray-600 truncate">{order.customerEmail}</div>
 
             <div className="col-span-2 flex justify-center">
-              <StatusBadge status={order.status} />
+              <StatusBadge status={getDisplayStatus(order)} />
             </div>
 
             <div className="col-span-2 text-center">
@@ -141,11 +150,11 @@ export const AdminOrdersPage = () => {
                 </select>
               ) : (
                 <span className="text-xs text-gray-400 italic">
-                  {order.status === "Delivered" || order.status === "Cancelled"
+                  {getDisplayStatus(order) === "Delivered" || getDisplayStatus(order) === "Cancelled"
                     ? "Final"
                     : order.paymentMethod === "COD"
                       ? "Awaiting action"
-                      : "Auto-managed"}
+                      : "Payment synced"}
                 </span>
               )}
             </div>

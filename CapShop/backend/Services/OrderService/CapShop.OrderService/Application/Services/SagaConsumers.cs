@@ -172,8 +172,18 @@ public class OrderSagaInventoryReservedConsumer : BackgroundService
                     }
                     else
                     {
-                        order.UpdateStatus(OrderStatus.Paid, "System (Saga)", "Payment verified and inventory reserved successfully.");
-                        await orderRepo.SaveChangesAsync(stoppingToken);
+                        if (order.Status == OrderStatus.PaymentPending)
+                        {
+                            order.UpdateStatus(OrderStatus.Paid, "System (Saga)", "Payment verified and inventory reserved successfully.");
+                            await orderRepo.SaveChangesAsync(stoppingToken);
+                        }
+                        else
+                        {
+                            _logger.LogInformation(
+                                "SAGA: Order {OrderId} was already marked {Status} before inventory reservation completed.",
+                                message.OrderId,
+                                order.Status);
+                        }
                     }
 
                     // Publish the final OrderPlaced event for Admin dashboard metrics

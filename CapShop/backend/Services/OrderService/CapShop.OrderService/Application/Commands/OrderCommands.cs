@@ -135,6 +135,14 @@ public class PlaceOrderCommandHandler
 
         order.SetPaymentTransaction(command.TransactionId);
 
+        if (!isCod)
+        {
+            order.UpdateStatus(
+                OrderStatus.Paid,
+                "System",
+                "Online payment verified before order placement.");
+        }
+
         // 4. Mark cart as converted — prevents it being modified again
         cart.MarkAsConverted();
 
@@ -217,7 +225,7 @@ public class PlaceOrderCommandHandler
         Id = o.Id,
         OrderNumber = o.OrderNumber,
         TotalAmount = o.TotalAmount,
-        Status = o.Status.ToString(),
+        Status = GetDisplayStatus(o),
         PaymentMethod = o.PaymentMethod,
         TransactionId = o.PaymentTransactionId,
         PlacedAt = o.PlacedAt,
@@ -239,6 +247,21 @@ public class PlaceOrderCommandHandler
             LineTotal = i.LineTotal
         }).ToList()
     };
+
+    internal static string GetDisplayStatus(Order order)
+    {
+        var isOnlinePayment =
+            !string.Equals(order.PaymentMethod, PaymentMethod.COD, StringComparison.OrdinalIgnoreCase);
+
+        if (order.Status == OrderStatus.PaymentPending &&
+            isOnlinePayment &&
+            !string.IsNullOrWhiteSpace(order.PaymentTransactionId))
+        {
+            return OrderStatus.Paid.ToString();
+        }
+
+        return order.Status.ToString();
+    }
 }
 
 

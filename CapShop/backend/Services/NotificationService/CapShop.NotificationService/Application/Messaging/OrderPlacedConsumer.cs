@@ -33,15 +33,14 @@ public class OrderPlacedConsumer : BackgroundService
     _serviceProvider = serviceProvider;
     _orderEmailService = orderEmailService;
     _logger = logger;
-    InitRabbitMq();
   }
 
-  private void InitRabbitMq()
+  public override Task StartAsync(CancellationToken cancellationToken)
   {
     if (!_options.Enabled)
     {
-      _logger.LogInformation("RabbitMQ consumer disabled.");
-      return;
+      _logger.LogInformation("RabbitMQ consumer disabled for NotificationService.");
+      return base.StartAsync(cancellationToken);
     }
 
     try
@@ -52,22 +51,30 @@ public class OrderPlacedConsumer : BackgroundService
         Port = _options.Port,
         UserName = _options.UserName,
         Password = _options.Password,
+        VirtualHost = _options.VirtualHost,
         DispatchConsumersAsync = true
       };
 
       _connection = factory.CreateConnection();
       _channel = _connection.CreateModel();
 
-      _channel.ExchangeDeclare("CapshopExchange", ExchangeType.Topic, durable: true);
-      _channel.QueueDeclare("NotificationService_OrderQueue", durable: true, exclusive: false, autoDelete: false);
-      _channel.QueueBind("NotificationService_OrderQueue", "CapshopExchange", "order.placed");
+      _channel.ExchangeDeclare(_options.ExchangeName, ExchangeType.Topic, durable: true, autoDelete: false);
+      _channel.QueueDeclare(_options.NotificationOrderPlacedQueueName, durable: true, exclusive: false, autoDelete: false);
+      _channel.QueueBind(
+        _options.NotificationOrderPlacedQueueName,
+        _options.ExchangeName,
+        _options.OrderPlacedRoutingKey);
+      _channel.BasicQos(0, 1, false);
 
       _logger.LogInformation("RabbitMQ initialized successfully in NotificationService.");
     }
     catch (Exception ex)
     {
-      _logger.LogError(ex, "Failed to connect to RabbitMQ");
+      _logger.LogError(ex, "Failed to connect to RabbitMQ for NotificationService.");
+      throw;
     }
+
+    return base.StartAsync(cancellationToken);
   }
 
   protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -105,6 +112,15 @@ public class OrderPlacedConsumer : BackgroundService
           var emailResult = await _orderEmailService.SendOrderPlacedAcknowledgementAsync(evt, stoppingToken);
           notification.EmailStatus = emailResult.Success ? "Sent" : "Failed";
           notification.EmailFailureReason = emailResult.ErrorMessage;
+
+          if (!emailResult.Success)
+          {
+            notification.Title = "Order placed, but email delivery failed";
+            notification.Message =
+              $"Your order {evt.OrderNumber} was placed successfully, but we couldn't send the confirmation email. " +
+              "Please check your orders/notifications here or contact support if needed.";
+          }
+
           await db.SaveChangesAsync(stoppingToken);
         }
 
@@ -117,7 +133,7 @@ public class OrderPlacedConsumer : BackgroundService
       }
     };
 
-    _channel.BasicConsume("NotificationService_OrderQueue", autoAck: false, consumer);
+    _channel.BasicConsume(_options.NotificationOrderPlacedQueueName, autoAck: false, consumer);
     return Task.CompletedTask;
   }
 

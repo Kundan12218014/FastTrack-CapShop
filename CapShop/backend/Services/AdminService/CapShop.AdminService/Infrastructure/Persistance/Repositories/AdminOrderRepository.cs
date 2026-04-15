@@ -49,7 +49,7 @@ public class AdminOrderRepository : IAdminOrderRepository
 
         var totalCount = await _context.Database
             .SqlQueryRaw<int>(@"
-                SELECT COUNT(DISTINCT o.Id)
+                SELECT COUNT(DISTINCT o.Id) AS Value
                 FROM CapShopOrderDB.orders.Orders o
                 LEFT JOIN CapShopAuthDB.auth.Users u ON u.Id = o.UserId
                 WHERE (@Status = '' OR o.Status = @Status)
@@ -110,7 +110,7 @@ public class AdminOrderRepository : IAdminOrderRepository
     {
         // Validate allowed transitions
         var currentStatusResult = await _context.Database
-            .SqlQueryRaw<string>("SELECT Status FROM CapShopOrderDB.orders.Orders WHERE Id = @Id",
+            .SqlQueryRaw<string>("SELECT Status AS Value FROM CapShopOrderDB.orders.Orders WHERE Id = @Id",
                 new Microsoft.Data.SqlClient.SqlParameter("@Id", id))
             .FirstOrDefaultAsync(ct);
 

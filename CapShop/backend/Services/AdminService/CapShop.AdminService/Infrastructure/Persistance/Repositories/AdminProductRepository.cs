@@ -55,7 +55,7 @@ public class AdminProductRepository : IAdminProductRepository
 
         var totalCount = await _context.Database
             .SqlQueryRaw<int>($@"
-                SELECT COUNT(*)
+                SELECT COUNT(*) AS Value
                 FROM CapShopCatalogDB.catalog.Products p
                 WHERE (@Search = '%%' OR p.Name LIKE @Search OR p.Description LIKE @Search)",
                 new Microsoft.Data.SqlClient.SqlParameter("@Search", searchTerm))

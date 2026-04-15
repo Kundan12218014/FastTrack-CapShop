@@ -5,8 +5,10 @@ import { StatusBadge } from "../../../components/shared/StatusBadge";
 import { Loader } from "../../../components/shared/Loader";
 import toast from "react-hot-toast";
 
-const STATUS_OPTIONS = ["", "Paid", "Packed", "Shipped", "Delivered", "Cancelled"];
+const STATUS_OPTIONS = ["", "PaymentPending", "PaymentFailed", "Paid", "Packed", "Shipped", "Delivered", "Cancelled"];
 const NEXT_STATUS: Record<string, string[]> = {
+  PaymentPending: ["Paid", "Cancelled", "PaymentFailed"],
+  PaymentFailed: ["PaymentPending", "Cancelled"],
   Paid:    ["Packed", "Cancelled"],
   Packed:  ["Shipped", "Cancelled"],
   Shipped: ["Delivered"],
@@ -124,7 +126,9 @@ export const AdminOrdersPage = () => {
                   ))}
                 </select>
               ) : (
-                <span className="text-xs text-gray-400 italic">Final</span>
+                <span className="text-xs text-gray-400 italic">
+                  {order.status === "Delivered" || order.status === "Cancelled" ? "Final" : "Awaiting action"}
+                </span>
               )}
             </div>
           </div>

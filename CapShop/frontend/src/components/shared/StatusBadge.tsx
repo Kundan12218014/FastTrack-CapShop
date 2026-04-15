@@ -4,6 +4,8 @@ const statusMap: Record<string, string> = {
   InStock:       "badge-instock",
   LowStock:      "badge-lowstock",
   OutOfStock:    "badge-outstock",
+  Inactive:      "bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded-full font-medium",
+  PaymentPending:"bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded-full font-medium",
   Paid:          "badge-paid",
   Packed:        "badge-packed",
   Shipped:       "badge-shipped",

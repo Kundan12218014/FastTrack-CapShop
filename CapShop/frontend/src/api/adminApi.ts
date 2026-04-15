@@ -63,12 +63,13 @@ export async function getDashboardSummary(): Promise<DashboardSummaryDto> {
 
 export async function getAdminProducts(
   search?: string,
+  includeInactive = true,
   page = 1,
   pageSize = 20,
 ): Promise<AdminPagedResult<AdminProductDto>> {
   const res = await apiClient.get<
     ApiResponse<AdminPagedResult<AdminProductDto>>
-  >("/admin/products", { params: { search, page, pageSize } });
+  >("/admin/products", { params: { search, includeInactive, page, pageSize } });
   return res.data.data!;
 }
 

@@ -27,7 +27,7 @@ public class DashboardRepository : IDashboardRepository
                     (SELECT COUNT(*) FROM CapShopAuthDB.auth.Users WHERE Role = 'Customer') AS TotalCustomers,
 
                     (SELECT COUNT(*) FROM CapShopOrderDB.orders.Orders
-                     WHERE Status IN ('Paid', 'Packed', 'Shipped')) AS PendingOrders,
+                     WHERE Status IN ('PaymentPending', 'Paid', 'Packed', 'Shipped')) AS PendingOrders,
 
                     (SELECT COUNT(*) FROM CapShopCatalogDB.catalog.Products WHERE IsActive = 1) AS TotalProducts,
 

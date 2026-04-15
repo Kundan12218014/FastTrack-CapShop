@@ -20,6 +20,9 @@ public class GetProductByIdQueryHandler
         var product = await _productRepository.GetByIdAsync(query.ProductId, ct)
             ?? throw new NotFoundException("Product", query.ProductId);
 
+        if (!product.IsActive)
+            throw new NotFoundException("Product", query.ProductId);
+
         return GetProductsQueryHandler.MapToDto(product);
     }
 }

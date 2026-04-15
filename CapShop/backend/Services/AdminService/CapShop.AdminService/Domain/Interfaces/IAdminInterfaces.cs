@@ -11,7 +11,7 @@ namespace CapShop.AdminService.Domain.Interfaces;
 public interface IAdminProductRepository
 {
     Task<AdminPagedResult<AdminProductDto>> GetPagedAsync(
-        string? search, int page, int pageSize, CancellationToken ct = default);
+        string? search, bool includeInactive, int page, int pageSize, CancellationToken ct = default);
 
     Task<AdminProductDto?> GetByIdAsync(Guid id, CancellationToken ct = default);
 
@@ -35,7 +35,7 @@ public interface IAdminOrderRepository
     Task<AdminOrderDetailDto?> GetByIdAsync(Guid id, CancellationToken ct = default);
 
     Task UpdateStatusAsync(
-        Guid id, string newStatus, string changedBy,
+        Guid id, string newStatus, string changedBy, string? remarks,
         CancellationToken ct = default);
 }
 

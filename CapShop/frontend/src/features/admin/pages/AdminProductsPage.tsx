@@ -34,7 +34,7 @@ export const AdminProductsPage = () => {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await getAdminProducts(search || undefined, page, 10);
+      const res = await getAdminProducts(search || undefined, true, page, 10);
       setProducts(res.items);
       setTotalPages(res.totalPages);
     } catch (e: any) {
@@ -102,15 +102,11 @@ export const AdminProductsPage = () => {
   const handleToggleActive = async (id: string, current: boolean) => {
     try {
       await setProductActive(id, !current);
-      if (current) {
-        setProducts(items => items.filter(product => product.id !== id));
-      } else {
-        setProducts(items =>
-          items.map(product =>
-            product.id === id ? { ...product, isActive: true } : product,
-          ),
-        );
-      }
+      setProducts(items =>
+        items.map(product =>
+          product.id === id ? { ...product, isActive: !current } : product,
+        ),
+      );
       toast.success(`Product ${!current ? "activated" : "deactivated"}.`);
       fetchProducts();
     } catch (e: any) {
@@ -178,7 +174,7 @@ export const AdminProductsPage = () => {
             <div className="col-span-1 text-right text-sm text-gray-600">{p.stockQuantity}</div>
 
             <div className="col-span-2 flex justify-center">
-              <StatusBadge status={p.stockStatus} />
+              <StatusBadge status={p.isActive ? p.stockStatus : "Inactive"} />
             </div>
 
             <div className="col-span-2 flex justify-end gap-2">

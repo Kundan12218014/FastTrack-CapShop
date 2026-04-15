@@ -21,10 +21,11 @@ public class AdminProductRepository : IAdminProductRepository
         => _context = context;
 
     public async Task<AdminPagedResult<AdminProductDto>> GetPagedAsync(
-        string? search, int page, int pageSize, CancellationToken ct = default)
+        string? search, bool includeInactive, int page, int pageSize, CancellationToken ct = default)
     {
         var searchTerm = $"%{search ?? ""}%";
         var offset = (page - 1) * pageSize;
+        var includeInactiveFlag = includeInactive ? 1 : 0;
 
         var items = await _context.Database
             .SqlQueryRaw<AdminProductDto>($@"
@@ -47,20 +48,22 @@ public class AdminProductRepository : IAdminProductRepository
                     p.UpdatedAt
                 FROM CapShopCatalogDB.catalog.Products p
                 INNER JOIN CapShopCatalogDB.catalog.Categories c ON c.Id = p.CategoryId
-                WHERE p.IsActive = 1
+                WHERE (@IncludeInactive = 1 OR p.IsActive = 1)
                   AND (@Search = '%%' OR p.Name LIKE @Search OR p.Description LIKE @Search)
                 ORDER BY p.CreatedAt DESC
                 OFFSET {offset} ROWS FETCH NEXT {pageSize} ROWS ONLY",
-                new Microsoft.Data.SqlClient.SqlParameter("@Search", searchTerm))
+                new Microsoft.Data.SqlClient.SqlParameter("@Search", searchTerm),
+                new Microsoft.Data.SqlClient.SqlParameter("@IncludeInactive", includeInactiveFlag))
             .ToListAsync(ct);
 
         var totalCount = await _context.Database
             .SqlQueryRaw<int>($@"
                 SELECT COUNT(*) AS Value
                 FROM CapShopCatalogDB.catalog.Products p
-                WHERE p.IsActive = 1
+                WHERE (@IncludeInactive = 1 OR p.IsActive = 1)
                   AND (@Search = '%%' OR p.Name LIKE @Search OR p.Description LIKE @Search)",
-                new Microsoft.Data.SqlClient.SqlParameter("@Search", searchTerm))
+                new Microsoft.Data.SqlClient.SqlParameter("@Search", searchTerm),
+                new Microsoft.Data.SqlClient.SqlParameter("@IncludeInactive", includeInactiveFlag))
             .FirstOrDefaultAsync(ct);
 
         return new AdminPagedResult<AdminProductDto>(items, totalCount, page, pageSize);
@@ -142,7 +145,9 @@ public class AdminProductRepository : IAdminProductRepository
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
     {
-        // Soft delete — set IsActive = false, never hard delete
-        await SetActiveAsync(id, false, ct);
+        await _context.Database.ExecuteSqlRawAsync(@"
+            DELETE FROM CapShopCatalogDB.catalog.Products
+            WHERE Id = @Id",
+            new Microsoft.Data.SqlClient.SqlParameter("@Id", id));
     }
 }

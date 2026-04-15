@@ -35,11 +35,12 @@ public class AdminProductsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<AdminPagedResult<AdminProductDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetProducts(
         [FromQuery] string? search = null,
+        [FromQuery] bool includeInactive = true,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
-        var result = await _productRepository.GetPagedAsync(search, page, pageSize, ct);
+        var result = await _productRepository.GetPagedAsync(search, includeInactive, page, pageSize, ct);
         return Ok(ApiResponse<AdminPagedResult<AdminProductDto>>.Ok(result));
     }
 
@@ -133,7 +134,7 @@ public class AdminProductsController : ControllerBase
             $"Product {(dto.IsActive ? "activated" : "deactivated")} successfully."));
     }
 
-    // DELETE /admin/products/{id}  — soft delete
+    // DELETE /admin/products/{id}  — permanent delete
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]

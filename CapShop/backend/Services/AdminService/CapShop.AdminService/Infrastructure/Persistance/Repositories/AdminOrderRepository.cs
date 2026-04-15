@@ -106,7 +106,7 @@ public class AdminOrderRepository : IAdminOrderRepository
     }
 
     public async Task UpdateStatusAsync(
-        Guid id, string newStatus, string changedBy, CancellationToken ct = default)
+        Guid id, string newStatus, string changedBy, string? remarks, CancellationToken ct = default)
     {
         // Validate allowed transitions
         var currentStatusResult = await _context.Database
@@ -120,9 +120,11 @@ public class AdminOrderRepository : IAdminOrderRepository
         var current = currentStatusResult;
         var allowedTransitions = current switch
         {
+            "PaymentPending" => new[] { "Paid", "Cancelled", "PaymentFailed" },
             "Paid" => new[] { "Packed", "Cancelled" },
             "Packed" => new[] { "Shipped", "Cancelled" },
             "Shipped" => new[] { "Delivered" },
+            "PaymentFailed" => new[] { "PaymentPending", "Cancelled" },
             _ => Array.Empty<string>()
         };
 
@@ -144,12 +146,13 @@ public class AdminOrderRepository : IAdminOrderRepository
         await _context.Database.ExecuteSqlRawAsync(@"
             INSERT INTO CapShopOrderDB.orders.OrderStatusHistory
                 (Id, OrderId, FromStatus, ToStatus, ChangedBy, Remarks, ChangedAt)
-            VALUES (@Id, @OrderId, @From, @To, @By, NULL, @Now)",
+            VALUES (@Id, @OrderId, @From, @To, @By, @Remarks, @Now)",
             new Microsoft.Data.SqlClient.SqlParameter("@Id", Guid.NewGuid()),
             new Microsoft.Data.SqlClient.SqlParameter("@OrderId", id),
             new Microsoft.Data.SqlClient.SqlParameter("@From", current),
             new Microsoft.Data.SqlClient.SqlParameter("@To", newStatus),
             new Microsoft.Data.SqlClient.SqlParameter("@By", changedBy),
+            new Microsoft.Data.SqlClient.SqlParameter("@Remarks", (object?)remarks ?? DBNull.Value),
             new Microsoft.Data.SqlClient.SqlParameter("@Now", DateTime.UtcNow));
     }
 }

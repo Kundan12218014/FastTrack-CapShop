@@ -66,7 +66,7 @@ public class AdminOrdersController : ControllerBase
         [FromBody] UpdateOrderStatusDto dto,
         CancellationToken ct)
     {
-        await _orderRepository.UpdateStatusAsync(id, dto.NewStatus, AdminId, ct);
+        await _orderRepository.UpdateStatusAsync(id, dto.NewStatus, AdminId, dto.Remarks, ct);
 
         var log = AuditLog.Create(
             AdminId, "UPDATE_ORDER_STATUS", "Order",

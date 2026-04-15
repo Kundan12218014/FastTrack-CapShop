@@ -38,7 +38,7 @@ export const useAdminProducts = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await getAdminProducts(search || undefined, page, 10);
+      const res = await getAdminProducts(search || undefined, true, page, 10);
       setProducts(res.items);
       setTotalPages(res.totalPages);
     } finally {

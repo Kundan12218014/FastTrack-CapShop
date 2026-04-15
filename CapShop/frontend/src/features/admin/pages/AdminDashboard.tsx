@@ -24,13 +24,26 @@ export const AdminDashboard = () => {
   const navigate = useNavigate();
   const [data,    setData]    = useState<DashboardSummaryDto | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState<string | null>(null);
 
-  useEffect(() => {
-    getDashboardSummary().then(setData).finally(() => setLoading(false));
-  }, []);
+  const load = () => {
+    setLoading(true);
+    setError(null);
+    getDashboardSummary()
+      .then(setData)
+      .catch((e) => setError(e?.response?.data?.message ?? e?.message ?? "Failed to load dashboard data."))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
 
   if (loading) return <Loader />;
-  if (!data)   return <p className="text-gray-400">Failed to load dashboard data.</p>;
+  if (error || !data) return (
+    <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+      <p className="text-danger font-medium">{error ?? "Dashboard data unavailable."}</p>
+      <button onClick={load} className="btn-primary text-sm py-2 px-4">Retry</button>
+    </div>
+  );
 
   const kpis = [
     { label: "Total Orders",    value: data.totalOrders.toLocaleString(),                  icon: ShoppingBag, color: "bg-primary"  },

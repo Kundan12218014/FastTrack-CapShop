@@ -45,7 +45,9 @@ public class OrderEmailService
       using var client = new SmtpClient(smtpHost, smtpPort)
       {
         Credentials = new NetworkCredential(senderEmail, senderPassword),
-        EnableSsl = true
+        EnableSsl = true,
+        DeliveryMethod = SmtpDeliveryMethod.Network,
+        UseDefaultCredentials = false
       };
 
       using var mailMessage = new MailMessage

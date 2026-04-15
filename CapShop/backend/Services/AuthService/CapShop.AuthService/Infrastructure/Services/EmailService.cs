@@ -17,7 +17,7 @@ public class EmailService : IEmailService
         _logger = logger;
     }
 
-    public async Task SendEmailAsync(string to, string subject, string body)
+    public async Task<EmailSendResult> SendEmailAsync(string to, string subject, string body)
     {
         try
         {
@@ -28,16 +28,19 @@ public class EmailService : IEmailService
             var stringPort = emailSettings["SmtpPort"] ?? "587";
             var smtpPort = int.Parse(stringPort);
 
-            if (string.IsNullOrEmpty(senderPassword))
+            if (string.IsNullOrWhiteSpace(senderEmail) || string.IsNullOrWhiteSpace(senderPassword))
             {
-                _logger.LogWarning("Email password not set. Email not sent.");
-                return;
+                const string message = "SMTP sender credentials are not configured.";
+                _logger.LogWarning("{Message} Email not sent to {to}.", message, to);
+                return new EmailSendResult(false, message);
             }
 
             using var client = new SmtpClient(smtpHost, smtpPort)
             {
                 Credentials = new NetworkCredential(senderEmail, senderPassword),
-                EnableSsl = true
+                EnableSsl = true,
+                DeliveryMethod = SmtpDeliveryMethod.Network,
+                UseDefaultCredentials = false
             };
 
             var mailMessage = new MailMessage
@@ -51,11 +54,12 @@ public class EmailService : IEmailService
 
             await client.SendMailAsync(mailMessage);
             _logger.LogInformation("Email sent successfully to {to}", to);
+            return new EmailSendResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send email to {to}", to);
-            // In a robust system, you might want to rethrow or push to a dead-letter queue.
+            return new EmailSendResult(false, ex.Message);
         }
     }
 }

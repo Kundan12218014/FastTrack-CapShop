@@ -52,7 +52,18 @@ public class LoginCommandHandler
                 await _cache.SetStringAsync(otpKey, otp,
                     new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5) });
                 
-                await _emailService.SendEmailAsync(user.Email, "Your CapShop Login OTP", $"Your one-time password is: <b>{otp}</b>. It is valid for 5 minutes.");
+                var emailResult = await _emailService.SendEmailAsync(
+                    user.Email,
+                    "Your CapShop Login OTP",
+                    $"Your one-time password is: <b>{otp}</b>. It is valid for 5 minutes.");
+
+                if (!emailResult.Success)
+                {
+                    await _cache.RemoveAsync(otpKey, ct);
+                    throw new ServiceUnavailableException(
+                        "We couldn't send your login OTP email right now. Please try again in a moment.");
+                }
+
                 Console.WriteLine($"[EMAIL SENT] Sent OTP to {user.Email}");
             }
 

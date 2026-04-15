@@ -6,12 +6,26 @@ import { Loader } from "../../../components/shared/Loader";
 import toast from "react-hot-toast";
 
 const STATUS_OPTIONS = ["", "PaymentPending", "PaymentFailed", "Paid", "Packed", "Shipped", "Delivered", "Cancelled"];
-const NEXT_STATUS: Record<string, string[]> = {
-  PaymentPending: ["Paid", "Cancelled", "PaymentFailed"],
-  PaymentFailed: ["PaymentPending", "Cancelled"],
-  Paid:    ["Packed", "Cancelled"],
-  Packed:  ["Shipped", "Cancelled"],
-  Shipped: ["Delivered"],
+
+const getNextStatuses = (order: AdminOrderSummaryDto): string[] => {
+  const isCod = order.paymentMethod === "COD";
+
+  if (order.status === "PaymentPending")
+    return isCod ? ["Paid", "Cancelled", "PaymentFailed"] : [];
+
+  if (order.status === "PaymentFailed")
+    return isCod ? ["PaymentPending", "Cancelled"] : [];
+
+  switch (order.status) {
+    case "Paid":
+      return ["Packed", "Cancelled"];
+    case "Packed":
+      return ["Shipped", "Cancelled"];
+    case "Shipped":
+      return ["Delivered"];
+    default:
+      return [];
+  }
 };
 
 export const AdminOrdersPage = () => {
@@ -114,20 +128,24 @@ export const AdminOrdersPage = () => {
             </div>
 
             <div className="col-span-2 flex justify-end">
-              {NEXT_STATUS[order.status] ? (
+              {getNextStatuses(order).length > 0 ? (
                 <select
                   onChange={e => e.target.value && handleStatusUpdate(order.id, e.target.value)}
                   defaultValue=""
                   className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white hover:border-primary focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
                 >
                   <option value="" disabled>Update →</option>
-                  {NEXT_STATUS[order.status].map(s => (
+                  {getNextStatuses(order).map(s => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
               ) : (
                 <span className="text-xs text-gray-400 italic">
-                  {order.status === "Delivered" || order.status === "Cancelled" ? "Final" : "Awaiting action"}
+                  {order.status === "Delivered" || order.status === "Cancelled"
+                    ? "Final"
+                    : order.paymentMethod === "COD"
+                      ? "Awaiting action"
+                      : "Auto-managed"}
                 </span>
               )}
             </div>

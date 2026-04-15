@@ -94,7 +94,7 @@ public class InventoryReservationConsumer : BackgroundService
                     _logger.LogInformation("SAGA: Inventory reserved for Order {OrderId}.", message.OrderId);
                     await _publisher.PublishAsync(
                         _options.SagaInventoryReservedRoutingKey,
-                        new InventoryReservedIntegrationEvent(message.OrderId, DateTime.UtcNow),
+                        new InventoryReservedIntegrationEvent(message.OrderId, message.PaymentMethod, DateTime.UtcNow),
                         stoppingToken);
                 }
                 else

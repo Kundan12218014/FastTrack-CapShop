@@ -31,6 +31,7 @@ public record PaymentFailedIntegrationEvent(
 // Step 3a: Inventory Reserved -> Triggers Order Completion (Status: Paid)
 public record InventoryReservedIntegrationEvent(
     Guid OrderId,
+    string PaymentMethod,
     DateTime ReservedAt);
 
 // Step 3b: Inventory Failed -> Triggers Order Cancellation & Refund Request

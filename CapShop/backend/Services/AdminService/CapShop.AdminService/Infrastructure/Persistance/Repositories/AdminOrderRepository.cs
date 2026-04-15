@@ -118,13 +118,21 @@ public class AdminOrderRepository : IAdminOrderRepository
             throw new NotFoundException("Order", id);
 
         var current = currentStatusResult;
+        var paymentMethod = await _context.Database
+            .SqlQueryRaw<string>("SELECT PaymentMethod AS Value FROM CapShopOrderDB.orders.Orders WHERE Id = @Id",
+                new Microsoft.Data.SqlClient.SqlParameter("@Id", id))
+            .FirstOrDefaultAsync(ct)
+            ?? throw new NotFoundException("Order", id);
+
+        var isCod = string.Equals(paymentMethod, "COD", StringComparison.OrdinalIgnoreCase);
+
         var allowedTransitions = current switch
         {
-            "PaymentPending" => new[] { "Paid", "Cancelled", "PaymentFailed" },
+            "PaymentPending" when isCod => new[] { "Paid", "Cancelled", "PaymentFailed" },
             "Paid" => new[] { "Packed", "Cancelled" },
             "Packed" => new[] { "Shipped", "Cancelled" },
             "Shipped" => new[] { "Delivered" },
-            "PaymentFailed" => new[] { "PaymentPending", "Cancelled" },
+            "PaymentFailed" when isCod => new[] { "PaymentPending", "Cancelled" },
             _ => Array.Empty<string>()
         };
 

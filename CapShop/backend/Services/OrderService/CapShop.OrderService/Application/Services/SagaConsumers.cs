@@ -156,7 +156,7 @@ public class OrderSagaInventoryReservedConsumer : BackgroundService
 
                 if (message is null) throw new InvalidOperationException("InventoryReserved event payload was null.");
 
-                _logger.LogInformation("SAGA STEP 4: Inventory Reserved for Order {OrderId}. Marking as Paid.", message.OrderId);
+                _logger.LogInformation("SAGA STEP 4: Inventory Reserved for Order {OrderId}. Finalizing order state for {PaymentMethod}.", message.OrderId, message.PaymentMethod);
 
                 using var scope = _scopeFactory.CreateScope();
                 var orderRepo = scope.ServiceProvider.GetRequiredService<IOrderRepository>();
@@ -164,8 +164,17 @@ public class OrderSagaInventoryReservedConsumer : BackgroundService
 
                 if (order != null)
                 {
-                    order.UpdateStatus(OrderStatus.Paid, "System (Saga)", "Payment verified and inventory reserved successfully.");
-                    await orderRepo.SaveChangesAsync(stoppingToken);
+                    if (string.Equals(message.PaymentMethod, "COD", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logger.LogInformation(
+                            "SAGA: COD order {OrderId} inventory reserved. Keeping status at PaymentPending until admin confirms payment.",
+                            message.OrderId);
+                    }
+                    else
+                    {
+                        order.UpdateStatus(OrderStatus.Paid, "System (Saga)", "Payment verified and inventory reserved successfully.");
+                        await orderRepo.SaveChangesAsync(stoppingToken);
+                    }
 
                     // Publish the final OrderPlaced event for Admin dashboard metrics
                     var placedEvent = new OrderPlacedIntegrationEvent(
@@ -173,7 +182,10 @@ public class OrderSagaInventoryReservedConsumer : BackgroundService
                         order.PaymentMethod, order.Items.Sum(i => i.Quantity), order.PlacedAt);
 
                     await _publisher.PublishAsync(_options.OrderPlacedRoutingKey, placedEvent, stoppingToken);
-                    _logger.LogInformation("SAGA COMPLETE: Order {OrderId} is now Paid.", message.OrderId);
+                    _logger.LogInformation(
+                        "SAGA COMPLETE: Order {OrderId} inventory reserved for payment method {PaymentMethod}.",
+                        message.OrderId,
+                        message.PaymentMethod);
                 }
 
                 _channel.BasicAck(eventArgs.DeliveryTag, multiple: false);

@@ -129,14 +129,13 @@ builder.Services.AddSwaggerGen(options =>
         Description = "Paste your JWT token here."
     });
 
-    // Valid Swashbuckle v10 syntax using the delegate and OpenApiSecuritySchemeReference
-    //options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
-    //{
-    //    {
-    //        new OpenApiSecuritySchemeReference("Bearer"),
-    //        new List<string>()
-    //    }
-    //});
+    options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecuritySchemeReference("Bearer", doc, null),
+            new List<string>()
+        }
+    });
 });
 
 // ══════════════════════════════════════════════════════════════════════════

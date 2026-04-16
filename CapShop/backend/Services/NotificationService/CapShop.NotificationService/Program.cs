@@ -6,6 +6,7 @@ using CapShop.Shared.Messaging;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 
 using System.Text;
 
@@ -49,6 +50,7 @@ builder.Services.AddAuthentication(options =>
     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
   };
 });
+builder.Services.AddAuthorization();
 
 builder.Services.AddCors(options =>
 {
@@ -57,7 +59,33 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+  options.SwaggerDoc("v1", new OpenApiInfo
+  {
+    Title = "CapShop - Notification Service",
+    Version = "v1",
+    Description = "User notifications and read status endpoints."
+  });
+
+  options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+  {
+    Name = "Authorization",
+    Description = "Enter JWT token like: Bearer {token}",
+    In = ParameterLocation.Header,
+    Type = SecuritySchemeType.Http,
+    Scheme = "bearer",
+    BearerFormat = "JWT"
+  });
+
+  options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
+  {
+    {
+      new OpenApiSecuritySchemeReference("Bearer", doc, null),
+      new List<string>()
+    }
+  });
+});
 
 var appInstance = builder.Build();
 

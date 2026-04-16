@@ -84,10 +84,6 @@ export const ProductCard = ({ product }: Props) => {
         <h3 className="font-semibold text-gray-800 text-[13px] leading-[1.3] line-clamp-2 mb-1 min-h-[34px]">
           {product.name}
         </h3>
-        <p className="text-[11px] text-gray-500 font-medium mb-1">
-          {Math.floor(Math.random() * 400 + 100)}g
-        </p>
-
         <div className="flex items-center justify-between mt-auto pt-2">
           <div className="flex flex-col">
             <span className="text-[12px] line-through text-gray-400 font-medium tracking-tight">

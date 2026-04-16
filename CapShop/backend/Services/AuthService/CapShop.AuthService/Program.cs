@@ -137,7 +137,7 @@ public partial class Program
             options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
             {
                 {
-                    new OpenApiSecuritySchemeReference("Bearer"),
+                    new OpenApiSecuritySchemeReference("Bearer", doc, null),
                     new List<string>()
                 }
             });

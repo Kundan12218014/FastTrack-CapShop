@@ -195,12 +195,12 @@ builder.Services.AddSwaggerGen(options =>
     });
 
     options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
-            {
-                {
-                    new OpenApiSecuritySchemeReference("Bearer"),
-                    new List<string>()
-                }
-            });
+    {
+        {
+            new OpenApiSecuritySchemeReference("Bearer", doc, null),
+            new List<string>()
+        }
+    });
 });
 
 // ══════════════════════════════════════════════════════════════════════════

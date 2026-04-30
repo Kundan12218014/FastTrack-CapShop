@@ -24,7 +24,10 @@ namespace CapShop.DataSeeder
             var adminUser = authContext.Set<User>().FirstOrDefault(u => u.Role == UserRoles.Admin);
             if (adminUser == null)
             {
-                throw new Exception("Admin user must be seeded before audit logs.");
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("[AuditLogSeeder] No admin user found - skipping audit log seeding.");
+                Console.ResetColor();
+                return;
             }
 
             string adminId = adminUser.Id.ToString();

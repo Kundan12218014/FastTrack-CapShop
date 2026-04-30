@@ -13,6 +13,16 @@ Thumbs.db
 *.tmp
 *.temp
 .capshop-pids
+.capshop-seeded
+
+# Python AI service — never commit venv, cache, or runtime data
+backend/Services/ollama_rag_app/.venv/
+backend/Services/ollama_rag_app/__pycache__/
+backend/Services/ollama_rag_app/data/index.json
+backend/Services/ollama_rag_app/uploads/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
 
 # Environment / secrets
 .env

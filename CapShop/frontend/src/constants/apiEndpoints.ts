@@ -15,6 +15,9 @@ export const API = {
     PRODUCT: (id: string) => `/catalog/products/${id}`,
     FEATURED: "/catalog/products/featured",
     CATEGORIES: "/catalog/categories",
+    RATINGS: (id: string) => `/catalog/products/${id}/ratings`,
+    RATING_AGGREGATE: (id: string) =>
+      `/catalog/products/${id}/ratings/aggregate`,
   },
 
   ORDERS: {
@@ -41,5 +44,16 @@ export const API = {
     EXPORT_SALES_CSV: "/admin/reports/sales/export/csv",
     EXPORT_SALES_PDF: "/admin/reports/sales/export/pdf",
     EXPORT_STATUS_CSV: "/admin/reports/status-split/export/csv",
+  },
+
+  /** AI Chatbot — routes to the FastAPI RAG service via /ai proxy */
+  AI: {
+    HEALTH: "/ai/api/health",
+    ASK: "/ai/api/ask",
+    ASK_STREAM: "/ai/api/ask/stream",
+    UPLOAD: "/ai/api/upload",
+    DOCUMENTS: "/ai/api/documents",
+    RETRIEVE: "/ai/api/retrieve",
+    RESET: "/ai/api/reset",
   },
 } as const;

@@ -23,6 +23,34 @@ public class ProductDto
     public DateTime CreatedAt { get; set; }
     public int CategoryId { get; set; }
     public string CategoryName { get; set; } = string.Empty;
+    // Rating aggregate — populated on demand
+    public double AverageRating { get; set; }
+    public int RatingCount { get; set; }
+}
+
+// ── Rating DTOs ───────────────────────────────────────────────────────────
+
+public class ProductRatingDto
+{
+    public Guid Id { get; set; }
+    public Guid ProductId { get; set; }
+    public string UserName { get; set; } = string.Empty;
+    public int Stars { get; set; }
+    public string? ReviewText { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class CreateRatingRequestDto
+{
+    public int Stars { get; set; }
+    public string? ReviewText { get; set; }
+}
+
+public class RatingAggregateDto
+{
+    public double Average { get; set; }
+    public int Count { get; set; }
+    public Dictionary<int, int> Distribution { get; set; } = new();
 }
 
 // ── REQUEST DTOs ──────────────────────────────────────────────────────────

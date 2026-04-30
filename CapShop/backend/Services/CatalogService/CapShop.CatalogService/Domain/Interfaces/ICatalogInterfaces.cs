@@ -45,3 +45,15 @@ public class ProductFilter
     public int PageSize { get; set; } = 12;
     public bool ActiveOnly { get; set; } = true;
 }
+
+/// <summary>
+/// Product rating repository interface.
+/// </summary>
+public interface IProductRatingRepository
+{
+    Task<IEnumerable<ProductRating>> GetByProductIdAsync(Guid productId, int limit = 20, CancellationToken ct = default);
+    Task<(double Average, int Count)> GetAggregateAsync(Guid productId, CancellationToken ct = default);
+    Task<ProductRating?> GetByUserAndProductAsync(Guid userId, Guid productId, CancellationToken ct = default);
+    Task AddAsync(ProductRating rating, CancellationToken ct = default);
+    Task SaveChangesAsync(CancellationToken ct = default);
+}

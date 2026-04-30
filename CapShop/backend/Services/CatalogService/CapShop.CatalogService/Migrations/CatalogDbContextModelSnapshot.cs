@@ -160,6 +160,44 @@ namespace CapShop.CatalogService.Migrations
                     b.ToTable("Products", "catalog");
                 });
 
+            modelBuilder.Entity("CapShop.CatalogService.Domain.Entities.ProductRating", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ReviewText")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("Stars")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId")
+                        .HasDatabaseName("IX_ProductRatings_ProductId");
+
+                    b.HasIndex("UserId", "ProductId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ProductRatings_UserId_ProductId");
+
+                    b.ToTable("ProductRatings", "catalog");
+                });
+
             modelBuilder.Entity("CapShop.CatalogService.Domain.Entities.Product", b =>
                 {
                     b.HasOne("CapShop.CatalogService.Domain.Entities.Category", "Category")
@@ -169,6 +207,17 @@ namespace CapShop.CatalogService.Migrations
                         .IsRequired();
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("CapShop.CatalogService.Domain.Entities.ProductRating", b =>
+                {
+                    b.HasOne("CapShop.CatalogService.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("CapShop.CatalogService.Domain.Entities.Category", b =>

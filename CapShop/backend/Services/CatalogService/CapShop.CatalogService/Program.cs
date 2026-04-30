@@ -1,10 +1,14 @@
+using CapShop.CatalogService.Application.Commands;
 using CapShop.CatalogService.Application.Queries;
 using CapShop.CatalogService.Domain.Interfaces;
 using CapShop.CatalogService.Infrastructure.Persistence;
 using CapShop.CatalogService.Infrastructure.Persistence.Repositories;
 using CapShop.Shared.Middleware;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using System.Text;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,12 +36,16 @@ builder.Services.AddStackExchangeRedisCache(options =>
 // ══════════════════════════════════════════════════════════════════════════
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IProductRatingRepository, ProductRatingRepository>();
 
 // Application query handlers
 builder.Services.AddScoped<GetProductsQueryHandler>();
 builder.Services.AddScoped<GetProductByIdQueryHandler>();
 builder.Services.AddScoped<GetFeaturedProductsQueryHandler>();
 builder.Services.AddScoped<GetCategoriesQueryHandler>();
+builder.Services.AddScoped<GetProductRatingsQueryHandler>();
+builder.Services.AddScoped<GetRatingAggregateQueryHandler>();
+builder.Services.AddScoped<SubmitRatingCommandHandler>();
 
 builder.Services.Configure<CapShop.Shared.Configuration.RabbitMqOptions>(
     builder.Configuration.GetSection(CapShop.Shared.Configuration.RabbitMqOptions.SectionName));
@@ -77,6 +85,33 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers();
 
 // ══════════════════════════════════════════════════════════════════════════
+// 4. JWT AUTHENTICATION (for protected endpoints like POST /ratings)
+// ══════════════════════════════════════════════════════════════════════════
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secretKey = jwtSettings["SecretKey"];
+if (!string.IsNullOrEmpty(secretKey))
+{
+    builder.Services
+        .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = jwtSettings["Issuer"],
+                ValidAudience = jwtSettings["Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(secretKey)),
+                ClockSkew = TimeSpan.FromSeconds(30)
+            };
+        });
+    builder.Services.AddAuthorization();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
 // MIDDLEWARE PIPELINE
 // ══════════════════════════════════════════════════════════════════════════
 var app = builder.Build();
@@ -100,6 +135,8 @@ if (!isContainerEnvironment)
     app.UseHttpsRedirection();
 
 app.UseCors("GatewayOnly");
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 // Auto-apply migrations in Development

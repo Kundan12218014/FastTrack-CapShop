@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useAuthStore } from "../store/authStore";
 import { ROUTES } from "../constants/routes";
 import { applyTheme, initTheme, type AppTheme } from "../utils/theme";
+import { ChatWidget } from "../features/chat";
 
 const navItems = [
   { to: ROUTES.ADMIN.DASHBOARD, icon: LayoutDashboard, label: "Dashboard" },
@@ -114,6 +115,8 @@ export const AdminLayout = () => {
           <Outlet />
         </main>
       </div>
+      {/* AI chatbot — available for admins too */}
+      <ChatWidget />
     </div>
   );
 };

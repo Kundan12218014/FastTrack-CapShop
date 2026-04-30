@@ -13,6 +13,12 @@ export default defineConfig({
         changeOrigin: true,
         secure: false, // allow self-signed dev certs
       },
+      // Proxy AI chatbot requests to the FastAPI RAG service
+      "/ai": {
+        target: "http://localhost:8001",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/ai/, ""),
+      },
     },
   },
 });

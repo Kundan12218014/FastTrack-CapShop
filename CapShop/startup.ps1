@@ -24,6 +24,8 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "  Catalog     -->  http://localhost:5002" -ForegroundColor Cyan
     Write-Host "  Orders      -->  http://localhost:5003" -ForegroundColor Cyan
     Write-Host "  Admin       -->  http://localhost:5004" -ForegroundColor Cyan
+    Write-Host "  Notification-->  http://localhost:5005" -ForegroundColor Cyan
+    Write-Host "  AI Chatbot  -->  http://localhost:8001/docs" -ForegroundColor Magenta
     Write-Host "  Frontend    -->  http://localhost:8080" -ForegroundColor White
     Write-Host ""
     Write-Host "  Note: Services may take a moment to fully boot" -ForegroundColor DarkGray
@@ -31,7 +33,8 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "  Stop all:   .\stop.ps1   (or stop.bat)" -ForegroundColor DarkGray
     Write-Host "  ==========================================" -ForegroundColor Green
     Write-Host ""
-} else {
+}
+else {
     Write-Host ""
     Write-Host "  [ERROR] Failed to start Docker containers." -ForegroundColor Red
     Write-Host "  ==========================================" -ForegroundColor Red

@@ -23,6 +23,7 @@ public class CatalogDbContext : DbContext
 
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<ProductRating> ProductRatings => Set<ProductRating>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -112,6 +113,32 @@ public class CatalogDbContext : DbContext
 
             entity.HasIndex(p => p.CreatedAt)
                   .HasDatabaseName("IX_Products_CreatedAt");
+        });
+
+        // ── ProductRating ─────────────────────────────────────────────────
+        modelBuilder.Entity<ProductRating>(entity =>
+        {
+            entity.ToTable("ProductRatings");
+            entity.HasKey(r => r.Id);
+
+            entity.Property(r => r.Id).ValueGeneratedNever();
+            entity.Property(r => r.UserName).IsRequired().HasMaxLength(200);
+            entity.Property(r => r.Stars).IsRequired();
+            entity.Property(r => r.ReviewText).HasMaxLength(1000);
+            entity.Property(r => r.CreatedAt).IsRequired();
+
+            entity.HasOne(r => r.Product)
+                  .WithMany()
+                  .HasForeignKey(r => r.ProductId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            // One rating per user per product
+            entity.HasIndex(r => new { r.UserId, r.ProductId })
+                  .IsUnique()
+                  .HasDatabaseName("IX_ProductRatings_UserId_ProductId");
+
+            entity.HasIndex(r => r.ProductId)
+                  .HasDatabaseName("IX_ProductRatings_ProductId");
         });
 
         // ── Seed Categories ───────────────────────────────────────────────

@@ -49,7 +49,7 @@ namespace CapShop.Shared.Exceptions
 
     //403 Forbidden( authenticated but not authorized for this resource access)
     public class ForbiddenException : Exception {
-        public ForbiddenException(string message = "You do have permission to perform this action.") : base(message) { }
+        public ForbiddenException(string message = "You do not have permission to perform this action.") : base(message) { }
     }
     public class ServiceUnavailableException : Exception
     {

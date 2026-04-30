@@ -69,3 +69,52 @@ export async function getCategories(): Promise<CategoryDto[]> {
   );
   return res.data.data!;
 }
+
+// ── Ratings ───────────────────────────────────────────────────────────────────
+
+export interface ProductRatingDto {
+  id: string;
+  productId: string;
+  userName: string;
+  stars: number;
+  reviewText?: string;
+  createdAt: string;
+}
+
+export interface RatingAggregateDto {
+  average: number;
+  count: number;
+  distribution: Record<number, number>;
+}
+
+export async function getProductRatings(
+  productId: string,
+  limit = 20,
+): Promise<ProductRatingDto[]> {
+  const res = await apiClient.get<ApiResponse<ProductRatingDto[]>>(
+    `/catalog/products/${productId}/ratings`,
+    { params: { limit } },
+  );
+  return res.data.data!;
+}
+
+export async function getRatingAggregate(
+  productId: string,
+): Promise<RatingAggregateDto> {
+  const res = await apiClient.get<ApiResponse<RatingAggregateDto>>(
+    `/catalog/products/${productId}/ratings/aggregate`,
+  );
+  return res.data.data!;
+}
+
+export async function submitRating(
+  productId: string,
+  stars: number,
+  reviewText?: string,
+): Promise<ProductRatingDto> {
+  const res = await apiClient.post<ApiResponse<ProductRatingDto>>(
+    `/catalog/products/${productId}/ratings`,
+    { stars, reviewText },
+  );
+  return res.data.data!;
+}

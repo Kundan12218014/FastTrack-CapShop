@@ -1,4 +1,3 @@
-// UserSeeder.cs
 using System;
 using System.Linq;
 using CapShop.AuthService.Domain.Entities;
@@ -8,25 +7,29 @@ namespace CapShop.DataSeeder
 {
     public static class UserSeeder
     {
+        // Seed users by email — idempotent: only inserts users that don't already exist.
         public static void Seed(AuthDbContext context)
         {
             Console.WriteLine("Seeding Users...");
-            if (context.Set<User>().Any())
+
+            var existingEmails = context.Set<User>()
+                .Select(u => u.Email)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            int added = 0;
+
+            // ── Admin ──────────────────────────────────────────────────────────
+            var adminEmail = "admin@capshop.com";
+            if (!existingEmails.Contains(adminEmail))
             {
-                var originalColor = Console.ForegroundColor;
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("Users already seeded. Skipping.");
-                Console.ForegroundColor = originalColor;
-                return;
+                var hash = BCrypt.Net.BCrypt.HashPassword("Admin@1234", 12);
+                var admin = User.Create("CapShop Admin", adminEmail, "9000000000", hash, UserRoles.Admin);
+                context.Set<User>().Add(admin);
+                added++;
             }
 
-            // ── Primary Admin (you!) ────────────────────────────────────────────
-            var adminPasswordHash = BCrypt.Net.BCrypt.HashPassword("Kundan@1234", 12);
-            var admin = User.Create("Kundan Kumar", "kumarfocus165@gmail.com", "7667820058", adminPasswordHash, UserRoles.Admin);
-            context.Set<User>().Add(admin);
-
-            // ── Demo customers ──────────────────────────────────────────────────
-            var customerPasswordHash = BCrypt.Net.BCrypt.HashPassword("Password1!", 12);
+            // ── Demo customers ─────────────────────────────────────────────────
+            var customerHash = BCrypt.Net.BCrypt.HashPassword("Password1!", 12);
             var customersData = new[]
             {
                 ("Priya Patel",    "priya.patel@gmail.com",     "9876543201"),
@@ -41,18 +44,29 @@ namespace CapShop.DataSeeder
                 ("Manish Joshi",   "manish.joshi@gmail.com",    "9876543210")
             };
 
-            foreach (var c in customersData)
+            foreach (var (name, email, phone) in customersData)
             {
-                var customer = User.Create(c.Item1, c.Item2, c.Item3, customerPasswordHash, UserRoles.Customer);
-                context.Set<User>().Add(customer);
+                if (!existingEmails.Contains(email))
+                {
+                    var customer = User.Create(name, email, phone, customerHash, UserRoles.Customer);
+                    context.Set<User>().Add(customer);
+                    added++;
+                }
             }
 
-            context.SaveChanges();
-
-            var greenColor = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Successfully seeded 11 users (1 admin + 10 customers).");
-            Console.ForegroundColor = greenColor;
+            if (added > 0)
+            {
+                context.SaveChanges();
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"Seeded {added} new users.");
+                Console.ResetColor();
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("All seed users already exist. Skipping.");
+                Console.ResetColor();
+            }
         }
     }
 }

@@ -29,9 +29,30 @@ namespace CapShop.DataSeeder
             var users = authContext.Set<User>().ToList();
             var products = catalogContext.Set<Product>().ToList();
 
-            var admin = users.First(u => u.Role == UserRoles.Admin);
+            if (!users.Any())
+            {
+                Console.WriteLine("[OrderSeeder] No users found - skipping order seeding.");
+                return;
+            }
+            if (!products.Any())
+            {
+                Console.WriteLine("[OrderSeeder] No products found - skipping order seeding.");
+                return;
+            }
 
-            Guid GetUserId(string emailPrefix) => users.First(u => u.Email.StartsWith(emailPrefix)).Id;
+            var admin = users.FirstOrDefault(u => u.Role == UserRoles.Admin);
+            if (admin == null)
+            {
+                Console.WriteLine("[OrderSeeder] No admin user found - skipping order seeding.");
+                return;
+            }
+
+            Guid GetUserId(string emailPrefix)
+            {
+                var user = users.FirstOrDefault(u => u.Email.StartsWith(emailPrefix));
+                if (user == null) throw new Exception($"[OrderSeeder] User with email starting '{emailPrefix}' not found.");
+                return user.Id;
+            }
 
             CartItem CreateCartItem(string productName, int qty)
             {

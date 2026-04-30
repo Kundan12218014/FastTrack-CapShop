@@ -14,11 +14,17 @@ namespace CapShop.DataSeeder
         {
             try
             {
-                Console.WriteLine("Loading configuration...");
+                Console.WriteLine("[DataSeeder] Loading configuration...");
+
+                // Respect ASPNETCORE_ENVIRONMENT so appsettings.Development.json
+                // is picked up automatically when running locally.
+                var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+
                 var configuration = new ConfigurationBuilder()
                     .SetBasePath(System.IO.Directory.GetCurrentDirectory())
                     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                    .AddEnvironmentVariables()   // ← Docker overrides from docker-compose
+                    .AddJsonFile($"appsettings.{env}.json", optional: true, reloadOnChange: true)
+                    .AddEnvironmentVariables()   // Docker overrides from docker-compose
                     .Build();
 
                 var authConnectionString    = configuration.GetConnectionString("AuthConnection");
@@ -26,7 +32,8 @@ namespace CapShop.DataSeeder
                 var orderConnectionString   = configuration.GetConnectionString("OrderConnection");
                 var adminConnectionString   = configuration.GetConnectionString("AdminConnection");
 
-                Console.WriteLine("Connecting to databases...");
+                Console.WriteLine($"[DataSeeder] Environment: {env}");
+                Console.WriteLine("[DataSeeder] Connecting to databases...");
 
                 var authOptions = new DbContextOptionsBuilder<AuthDbContext>()
                     .UseSqlServer(authConnectionString).Options;
@@ -42,29 +49,23 @@ namespace CapShop.DataSeeder
                 using var orderContext   = new OrderDbContext(orderOptions);
                 using var adminContext   = new AdminDbContext(adminOptions);
 
-                // Wait briefly for EF to be sure migrations are applied
-                Console.WriteLine("Waiting for database migrations to complete...");
-                System.Threading.Thread.Sleep(10000);
-
-                Console.WriteLine("Starting CapShop Data Seed...");
+                Console.WriteLine("[DataSeeder] Starting seed...");
                 SeedOrchestrator.SeedAll(authContext, catalogContext, orderContext, adminContext);
-                Console.WriteLine("✅ Seed completed successfully!");
+                Console.WriteLine("[DataSeeder] Seed completed successfully!");
             }
             catch (Exception ex)
             {
-                var originalColor = Console.ForegroundColor;
                 Console.ForegroundColor = ConsoleColor.Red;
                 if (ex.InnerException != null && ex.InnerException.Message.Contains("Invalid object name"))
                 {
-                    Console.WriteLine("ERROR: Database tables not found. Migrations may not have run yet.");
-                    Console.WriteLine("The microservices apply migrations on startup — retry after they are healthy.");
+                    Console.WriteLine("[DataSeeder] ERROR: Tables not found. Run migrations first.");
                 }
                 else
                 {
-                    Console.WriteLine($"ERROR: {ex.Message}");
+                    Console.WriteLine($"[DataSeeder] ERROR: {ex.Message}");
                     Console.WriteLine(ex.StackTrace);
                 }
-                Console.ForegroundColor = originalColor;
+                Console.ResetColor();
                 Environment.Exit(1);
             }
         }

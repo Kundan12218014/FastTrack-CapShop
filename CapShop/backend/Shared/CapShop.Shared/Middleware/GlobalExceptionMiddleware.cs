@@ -57,10 +57,10 @@ namespace CapShop.Shared.Middleware
             {
                 return Task.CompletedTask;
             }
-            context.Response.ContentType = "applicatoin/json";
+            context.Response.ContentType = "application/json";
             var (statusCode, response) = exception switch
             {
-                NotFoundException ex => (HttpStatusCode.NotFound, ApiResponse<Object>.Fail(ex.Message)),
+                NotFoundException ex => (HttpStatusCode.NotFound, ApiResponse<object>.Fail(ex.Message)),
                 ConflictException ex => (HttpStatusCode.Conflict, ApiResponse<object>.Fail(ex.Message)),
                 AppValidationExceptions ex => (HttpStatusCode.UnprocessableEntity, ApiResponse<object>.Fail(ex.Message, ex.Errors)),
                 DomainException ex => (HttpStatusCode.BadRequest,

@@ -215,6 +215,33 @@ services:
       - "5000:8080"
     restart: on-failure
 
+  # ── AI Chatbot Service (Ollama RAG FastAPI) ──────────────────────────────────
+  ai-service:
+    build:
+      context: .
+      dockerfile: backend/Services/ollama_rag_app/Dockerfile
+    container_name: capshop-ai-service
+    environment:
+      # Point to the host-level Ollama instance (running outside Docker).
+      # On Linux use host-gateway; on Mac/Windows use host.docker.internal.
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434/api/generate}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:1b}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8001:8000"
+    volumes:
+      # Persist the RAG index and uploaded files across container restarts
+      - ai-data:/app/data
+      - ai-uploads:/app/uploads
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
   frontend:
     build:
       context: .
@@ -224,6 +251,7 @@ services:
     container_name: capshop-frontend
     depends_on:
       - gateway
+      - ai-service
     ports:
       - "8080:80"
     restart: on-failure
@@ -232,3 +260,5 @@ volumes:
   sqlserver-data:
   redis-data:
   rabbitmq-data:
+  ai-data:
+  ai-uploads:
